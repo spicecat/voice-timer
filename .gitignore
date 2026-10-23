@@ -1,8 +1,20 @@
+# Dependencies
 node_modules/
-build/
+
+# Production Build
 dist/
-coverage/
-.DS_Store
-*.log
+build/
+
+# Environment Variables
 .env*
 !.env.example
+
+# Logs
+*.log
+
+# System/IDE Files
+.DS_Store
+.aistudio/
+
+# Testing
+coverage/

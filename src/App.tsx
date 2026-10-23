@@ -54,13 +54,13 @@ export default function App() {
   useEffect(() => {
     const formatted = formatTime(timeLeft, false);
     if (status === 'running') {
-      document.title = `[${formatted}] (Loop ${currentLoop}/${targetLoops}) — Custom Timer`;
+      document.title = `[${formatted}] (Loop ${currentLoop}/${targetLoops}) — Voice Timer`;
     } else if (status === 'paused') {
-      document.title = `[Paused ${formatted}] — Custom Timer`;
+      document.title = `[Paused ${formatted}] — Voice Timer`;
     } else if (status === 'completed') {
-      document.title = `[Completed] — Custom Timer`;
+      document.title = `[Completed] — Voice Timer`;
     } else {
-      document.title = `Custom Timer`;
+      document.title = `Voice Timer`;
     }
   }, [timeLeft, status, currentLoop, targetLoops]);
 
