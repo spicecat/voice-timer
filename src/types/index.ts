@@ -2,7 +2,9 @@ export type SoundMode = 'voice' | 'chime' | 'off';
 
 export type VoiceStyle = 'natural' | 'digits';
 
-export type SupportedLanguage = 'en';
+/** Derived from the shared language manifest: src/constants/languages.json */
+export type SupportedLanguage =
+  keyof typeof import('../constants/languages.json');
 
 export interface LanguageConfig {
   audioPath: string;

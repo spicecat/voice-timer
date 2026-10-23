@@ -7,7 +7,7 @@
     "build": "vite build",
     "clean": "rm -rf dist",
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "generate:audio": "node scripts/generate_audio.js",
+    "generate:audio": "node scripts/generate-audio.js",
     "lint": "biome check . --reporter=concise --colors=off && tsc --noEmit --pretty false",
     "lint:fix": "biome check --write . --reporter=concise --colors=off",
     "prepare": "husky",

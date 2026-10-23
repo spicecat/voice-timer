@@ -1,17 +1,24 @@
 import type {LanguageConfig, SupportedLanguage} from '../types';
+import languagesJson from './languages.json';
 
 /**
  * Registry of supported voice languages.
- * Designed for frictionless expansion to multiple languages in the future.
+ *
+ * Single source of truth is src/constants/languages.json, shared with
+ * scripts/generate-audio.js. This file derives the typed registry for the app.
  */
-export const SUPPORTED_LANGUAGES: Record<SupportedLanguage, LanguageConfig> = {
-  en: {
-    audioPath: '/audio/en',
-    code: 'en',
-    label: 'English',
-    speechSynthesisLang: 'en-US',
-  },
-};
+export const SUPPORTED_LANGUAGES: Record<SupportedLanguage, LanguageConfig> =
+  Object.fromEntries(
+    Object.entries(languagesJson).map(([code, definition]) => [
+      code,
+      {
+        audioPath: definition.audioPath,
+        code: code as SupportedLanguage,
+        label: definition.label,
+        speechSynthesisLang: definition.speechSynthesisLang,
+      },
+    ]),
+  ) as Record<SupportedLanguage, LanguageConfig>;
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = 'en';
 
