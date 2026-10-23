@@ -1,6 +1,0 @@
-{
-  "summary":  "Remove cadence option and configure default cadence to announce every second at 60s and below, and every minute above 60s.",
-  "updatedAt":  "2026-10-23T21:07:53.116832623Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}
