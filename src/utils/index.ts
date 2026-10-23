@@ -1,8 +1,2 @@
-export { formatTime } from './formatTime';
-export {
-  clamp,
-  generateId,
-  getTimerDurationSec,
-  getStepDuration,
-  getLoopDuration,
-} from './timeCalculations';
+export {formatTime} from './format-time';
+export {clamp, getTimerDurationSec} from './time-calculations';

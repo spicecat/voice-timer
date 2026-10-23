@@ -1,31 +1,67 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
-  "files": {
-    "includes": ["src/**/*"]
+  "assist": {
+    "actions": {
+      "preset": "all"
+    }
+  },
+  "css": {
+    "formatter": {
+      "enabled": true
+    }
   },
   "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 100
+    "indentStyle": "space"
   },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "style": {
-        "noNonNullAssertion": "warn"
-      },
-      "a11y": {
-        "noSvgWithoutTitle": "off"
-      },
-      "correctness": {
-        "useExhaustiveDependencies": "warn"
-      }
+  "html": {
+    "formatter": {
+      "enabled": true
     }
   },
   "javascript": {
     "formatter": {
+      "bracketSpacing": false,
       "quoteStyle": "single"
     }
+  },
+  "linter": {
+    "rules": {
+      "style": {
+        "useFilenamingConvention": {
+          "level": "on",
+          "options": {
+            "filenameCases": ["kebab-case", "PascalCase"]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "assist": {
+        "actions": {
+          "source": {
+            "useSortedKeys": "off"
+          }
+        }
+      },
+      "includes": ["package.json"]
+    },
+    {
+      "includes": ["public/favicon.svg"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noSvgWithoutTitle": "off"
+          }
+        }
+      }
+    }
+  ],
+  "vcs": {
+    "clientKind": "git",
+    "defaultBranch": "main",
+    "enabled": true,
+    "useIgnoreFile": true
   }
 }

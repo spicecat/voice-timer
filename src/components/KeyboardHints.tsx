@@ -1,10 +1,12 @@
-import { memo } from 'react';
+import {memo} from 'react';
 
 export interface KeyboardHintsProps {
   isDark: boolean;
 }
 
-export const KeyboardHints = memo(function KeyboardHints({ isDark }: KeyboardHintsProps) {
+export const KeyboardHints = memo(function KeyboardHints({
+  isDark,
+}: KeyboardHintsProps) {
   const kbdClass = `px-1.5 py-0.5 rounded border text-[10px] ${
     isDark
       ? 'bg-zinc-900 border-zinc-800 text-zinc-300'

@@ -5,10 +5,10 @@ export type VoiceStyle = 'natural' | 'digits';
 export type SupportedLanguage = 'en';
 
 export interface LanguageConfig {
+  audioPath: string;
   code: SupportedLanguage;
   label: string;
   speechSynthesisLang: string;
-  audioPath: string;
 }
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'completed';

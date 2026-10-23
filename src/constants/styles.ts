@@ -11,6 +11,10 @@ export const sharedStyles = {
         : 'bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-zinc-500'
     }`,
 
+  /** Dividing line between panel sections */
+  sectionDivider: (isDark: boolean) =>
+    isDark ? 'border-zinc-900' : 'border-zinc-200',
+
   /** Form select dropdown styles */
   selectInput: (isDark: boolean) =>
     `text-xs border rounded px-2 py-1 focus:outline-none cursor-pointer ${
@@ -18,9 +22,6 @@ export const sharedStyles = {
         ? 'bg-zinc-900 border-zinc-800 text-zinc-200 focus:border-zinc-600'
         : 'bg-white border-zinc-300 text-zinc-800 focus:border-zinc-500'
     }`,
-
-  /** Dividing line between panel sections */
-  sectionDivider: (isDark: boolean) => (isDark ? 'border-zinc-900' : 'border-zinc-200'),
 
   /** Secondary / muted text label */
   textMuted: (isDark: boolean) => (isDark ? 'text-zinc-400' : 'text-zinc-600'),

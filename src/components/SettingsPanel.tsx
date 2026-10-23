@@ -1,16 +1,16 @@
-import { memo } from 'react';
-import { SUPPORTED_LANGUAGES, sharedStyles } from '../constants';
-import type { SoundMode, SupportedLanguage } from '../types';
+import {memo} from 'react';
+import {SUPPORTED_LANGUAGES, sharedStyles} from '../constants';
+import type {SoundMode, SupportedLanguage} from '../types';
 
 export interface SettingsPanelProps {
+  isDark: boolean;
+  language: SupportedLanguage;
+  onLanguageChange: (lang: SupportedLanguage) => void;
+  onSoundModeChange: (mode: SoundMode) => void;
+  onTestSound: () => void;
+  onVolumeChange: (volume: number) => void;
   soundMode: SoundMode;
   volume: number;
-  language: SupportedLanguage;
-  isDark: boolean;
-  onSoundModeChange: (mode: SoundMode) => void;
-  onVolumeChange: (volume: number) => void;
-  onLanguageChange: (lang: SupportedLanguage) => void;
-  onTestSound: () => void;
 }
 
 export const SettingsPanel = memo(function SettingsPanel({
@@ -33,11 +33,13 @@ export const SettingsPanel = memo(function SettingsPanel({
           <span>Sound</span>
           {soundMode !== 'off' && (
             <button
-              type="button"
-              onClick={onTestSound}
               className={`text-[11px] underline cursor-pointer ${
-                isDark ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-600 hover:text-zinc-900'
+                isDark
+                  ? 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-zinc-600 hover:text-zinc-900'
               }`}
+              onClick={onTestSound}
+              type="button"
             >
               Test Sound
             </button>
@@ -47,38 +49,44 @@ export const SettingsPanel = memo(function SettingsPanel({
         <div className="flex items-center gap-4 text-xs">
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input
-              type="radio"
-              name="soundMode"
-              value="voice"
               checked={soundMode === 'voice'}
+              className="w-3.5 h-3.5 cursor-pointer"
+              name="soundMode"
               onChange={() => onSoundModeChange('voice')}
-              className="w-3.5 h-3.5 cursor-pointer"
+              type="radio"
+              value="voice"
             />
-            <span className={isDark ? 'text-zinc-200' : 'text-zinc-800'}>Voice</span>
+            <span className={isDark ? 'text-zinc-200' : 'text-zinc-800'}>
+              Voice
+            </span>
           </label>
 
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input
-              type="radio"
-              name="soundMode"
-              value="chime"
               checked={soundMode === 'chime'}
-              onChange={() => onSoundModeChange('chime')}
               className="w-3.5 h-3.5 cursor-pointer"
+              name="soundMode"
+              onChange={() => onSoundModeChange('chime')}
+              type="radio"
+              value="chime"
             />
-            <span className={isDark ? 'text-zinc-200' : 'text-zinc-800'}>Chime</span>
+            <span className={isDark ? 'text-zinc-200' : 'text-zinc-800'}>
+              Chime
+            </span>
           </label>
 
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input
-              type="radio"
-              name="soundMode"
-              value="off"
               checked={soundMode === 'off'}
-              onChange={() => onSoundModeChange('off')}
               className="w-3.5 h-3.5 cursor-pointer"
+              name="soundMode"
+              onChange={() => onSoundModeChange('off')}
+              type="radio"
+              value="off"
             />
-            <span className={isDark ? 'text-zinc-200' : 'text-zinc-800'}>Off</span>
+            <span className={isDark ? 'text-zinc-200' : 'text-zinc-800'}>
+              Off
+            </span>
           </label>
         </div>
 
@@ -88,16 +96,20 @@ export const SettingsPanel = memo(function SettingsPanel({
             <span className={sharedStyles.textMuted(isDark)}>Volume</span>
             <div className="flex items-center gap-2">
               <input
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={Math.round(volume * 100)}
-                onChange={(e) => onVolumeChange(Number.parseInt(e.target.value, 10) / 100)}
                 aria-label="Sound volume"
                 className={`w-28 h-1.5 rounded-lg appearance-none cursor-pointer ${
-                  isDark ? 'bg-zinc-800 accent-zinc-200' : 'bg-zinc-200 accent-zinc-800'
+                  isDark
+                    ? 'bg-zinc-800 accent-zinc-200'
+                    : 'bg-zinc-200 accent-zinc-800'
                 }`}
+                max="100"
+                min="0"
+                onChange={(e) =>
+                  onVolumeChange(Number.parseInt(e.target.value, 10) / 100)
+                }
+                step="5"
+                type="range"
+                value={Math.round(volume * 100)}
               />
               <span
                 className={`w-8 text-right font-mono text-[11px] ${sharedStyles.textSubtle(isDark)}`}
@@ -115,10 +127,12 @@ export const SettingsPanel = memo(function SettingsPanel({
       >
         <span className={sharedStyles.textMuted(isDark)}>Language</span>
         <select
-          value={language}
-          onChange={(e) => onLanguageChange(e.target.value as SupportedLanguage)}
           aria-label="Voice language"
           className={sharedStyles.selectInput(isDark)}
+          onChange={(e) =>
+            onLanguageChange(e.target.value as SupportedLanguage)
+          }
+          value={language}
         >
           {Object.values(SUPPORTED_LANGUAGES).map((lang) => (
             <option key={lang.code} value={lang.code}>

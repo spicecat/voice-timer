@@ -3,29 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect } from 'react';
+import {useEffect} from 'react';
 import {
   Header,
   KeyboardHints,
-  SegmentList,
   SettingsPanel,
+  TimerConfigPanel,
   TimerControls,
   TimerDisplay,
 } from './components';
-import { sharedStyles } from './constants';
-import { useIntervalTimer } from './hooks/useIntervalTimer';
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { useTheme } from './hooks/useTheme';
-import { formatTime } from './utils/formatTime';
+import {sharedStyles} from './constants';
+import {useCustomTimer} from './hooks/use-custom-timer';
+import {useKeyboardShortcuts} from './hooks/use-keyboard-shortcuts';
+import {useTheme} from './hooks/use-theme';
+import {formatTime} from './utils/format-time';
 
 export default function App() {
-  const { isDark, toggleTheme } = useTheme();
+  const {isDark, toggleTheme} = useTheme();
 
   const {
-    steps,
-    currentStepIndex,
-    targetLoops,
-    currentLoop,
+    duration,
     soundMode,
     volume,
     language,
@@ -34,27 +31,25 @@ export default function App() {
     currentDuration,
     circumference,
     isDragging,
-    setTargetLoops,
+    setDuration,
+    setPresetSeconds,
     setSoundMode,
     setVolume,
     setLanguage,
     togglePlay,
     handleReset,
-    updateStep,
-    addSegment,
-    removeSegment,
     handleTestSound,
     handleSeekStart,
     handleSeek,
     handleSeekEnd,
     handleAdjustTime,
-  } = useIntervalTimer();
+  } = useCustomTimer();
 
   // Update document title dynamically based on timer state and time left
   useEffect(() => {
     const formatted = formatTime(timeLeft, false);
     if (status === 'running') {
-      document.title = `[${formatted}] (Loop ${currentLoop}/${targetLoops}) — Voice Timer`;
+      document.title = `[${formatted}] — Voice Timer`;
     } else if (status === 'paused') {
       document.title = `[Paused ${formatted}] — Voice Timer`;
     } else if (status === 'completed') {
@@ -62,14 +57,14 @@ export default function App() {
     } else {
       document.title = `Voice Timer`;
     }
-  }, [timeLeft, status, currentLoop, targetLoops]);
+  }, [timeLeft, status]);
 
   // Register hotkeys (Space for Play/Pause, R for Reset, T for Theme, ← → for Seek)
   useKeyboardShortcuts({
-    onTogglePlay: togglePlay,
-    onReset: handleReset,
-    onToggleTheme: toggleTheme,
     onAdjustTime: handleAdjustTime,
+    onReset: handleReset,
+    onTogglePlay: togglePlay,
+    onToggleTheme: toggleTheme,
   });
 
   return (
@@ -78,64 +73,55 @@ export default function App() {
         isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900'
       }`}
     >
-      {/* Top Bar: Loop tracker & Theme toggle */}
-      <Header
-        currentLoop={currentLoop}
-        targetLoops={targetLoops}
-        isDark={isDark}
-        onToggleTheme={toggleTheme}
-      />
+      {/* Top Bar: Title & Theme toggle */}
+      <Header isDark={isDark} onToggleTheme={toggleTheme} />
 
       {/* Main Center Area */}
       <main className="w-full max-w-sm flex flex-col items-center my-auto py-4">
         {/* Continuous Progress Ring & Big Digits */}
         <TimerDisplay
-          timeLeft={timeLeft}
-          currentDuration={currentDuration}
           circumference={circumference}
+          currentDuration={currentDuration}
           isDark={isDark}
           isDragging={isDragging}
-          onSeekStart={handleSeekStart}
+          onAdjustTime={handleAdjustTime}
           onSeek={handleSeek}
           onSeekEnd={handleSeekEnd}
-          onAdjustTime={handleAdjustTime}
+          onSeekStart={handleSeekStart}
+          timeLeft={timeLeft}
         />
 
         {/* Play/Pause & Reset Action Controls */}
         <TimerControls
-          status={status}
           isDark={isDark}
-          onTogglePlay={togglePlay}
           onReset={handleReset}
+          onTogglePlay={togglePlay}
+          status={status}
         />
 
         {/* Configuration Controls Section */}
         <div
           className={`w-full mt-10 space-y-5 border-t pt-6 ${sharedStyles.sectionDivider(isDark)}`}
         >
-          {/* Segments Management */}
-          <SegmentList
-            steps={steps}
-            currentStepIndex={currentStepIndex}
-            status={status}
+          {/* Timer Duration: Quick presets + h/m/s input */}
+          <TimerConfigPanel
+            duration={duration}
             isDark={isDark}
-            onAddSegment={addSegment}
-            onUpdateStep={updateStep}
-            onRemoveSegment={removeSegment}
+            onSelectPreset={setPresetSeconds}
+            onUpdateDuration={setDuration}
+            status={status}
           />
 
-          {/* Settings: Loops count, Sound mode, Volume, and Language */}
+          {/* Settings: Sound mode, Volume and Language */}
           <SettingsPanel
-            targetLoops={targetLoops}
+            isDark={isDark}
+            language={language}
+            onLanguageChange={setLanguage}
+            onSoundModeChange={setSoundMode}
+            onTestSound={handleTestSound}
+            onVolumeChange={setVolume}
             soundMode={soundMode}
             volume={volume}
-            language={language}
-            isDark={isDark}
-            onTargetLoopsChange={setTargetLoops}
-            onSoundModeChange={setSoundMode}
-            onVolumeChange={setVolume}
-            onLanguageChange={setLanguage}
-            onTestSound={handleTestSound}
           />
         </div>
       </main>

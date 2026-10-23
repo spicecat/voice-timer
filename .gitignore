@@ -15,6 +15,7 @@ build/
 # System/IDE Files
 .DS_Store
 .aistudio/
+.opencode/
 
 # Testing
 coverage/

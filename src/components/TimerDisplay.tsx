@@ -1,17 +1,17 @@
-import { useCallback, useRef } from 'react';
-import { PROGRESS_RING } from '../constants';
-import { formatTime } from '../utils/formatTime';
+import {useCallback, useRef} from 'react';
+import {PROGRESS_RING} from '../constants';
+import {formatTime} from '../utils/format-time';
 
 export interface TimerDisplayProps {
-  timeLeft: number;
-  currentDuration: number;
   circumference: number;
+  currentDuration: number;
   isDark: boolean;
   isDragging?: boolean;
-  onSeekStart?: () => void;
+  onAdjustTime?: (delta: number) => void;
   onSeek?: (newTime: number) => void;
   onSeekEnd?: () => void;
-  onAdjustTime?: (delta: number) => void;
+  onSeekStart?: () => void;
+  timeLeft: number;
 }
 
 export function TimerDisplay({
@@ -110,12 +110,16 @@ export function TimerDisplay({
 
   // Math in unrotated coordinates: center = (150, 150), radius = 135
   const progressRatio =
-    currentDuration > 0 ? Math.max(0, Math.min(1, timeLeft / currentDuration)) : 0;
+    currentDuration > 0
+      ? Math.max(0, Math.min(1, timeLeft / currentDuration))
+      : 0;
   const rad = progressRatio * 2 * Math.PI;
 
   // Knob position in unrotated SVG space (0 = top / 12 o'clock)
-  const knobX = PROGRESS_RING.VIEWBOX_SIZE / 2 + PROGRESS_RING.RADIUS * Math.sin(rad);
-  const knobY = PROGRESS_RING.VIEWBOX_SIZE / 2 - PROGRESS_RING.RADIUS * Math.cos(rad);
+  const knobX =
+    PROGRESS_RING.VIEWBOX_SIZE / 2 + PROGRESS_RING.RADIUS * Math.sin(rad);
+  const knobY =
+    PROGRESS_RING.VIEWBOX_SIZE / 2 - PROGRESS_RING.RADIUS * Math.cos(rad);
 
   const largeArcFlag = progressRatio > 0.5 ? 1 : 0;
 
@@ -127,91 +131,107 @@ export function TimerDisplay({
 
   return (
     <div
-      ref={containerRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      onKeyDown={handleKeyDown}
-      role="slider"
-      tabIndex={0}
       aria-label="Set timer duration"
-      aria-valuemin={0}
       aria-valuemax={currentDuration}
+      aria-valuemin={0}
       aria-valuenow={Math.round(timeLeft * 10) / 10}
       aria-valuetext={`${formatTime(timeLeft)} remaining`}
-      title="Click or drag around the dial to set time"
       className={`relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center select-none touch-none rounded-full cursor-grab active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-4 group ${
         isDark
           ? 'focus-visible:ring-zinc-400 focus-visible:ring-offset-zinc-950'
           : 'focus-visible:ring-zinc-600 focus-visible:ring-offset-zinc-50'
       }`}
+      onKeyDown={handleKeyDown}
+      onPointerCancel={handlePointerUp}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      ref={containerRef}
+      role="slider"
+      tabIndex={0}
+      title="Click or drag around the dial to set time"
     >
       <svg
-        className="w-full h-full pointer-events-none overflow-visible"
-        viewBox={`0 0 ${PROGRESS_RING.VIEWBOX_SIZE} ${PROGRESS_RING.VIEWBOX_SIZE}`}
-        role="img"
         aria-label="Timer Progress"
+        className="w-full h-full pointer-events-none overflow-visible"
+        role="img"
+        viewBox={`0 0 ${PROGRESS_RING.VIEWBOX_SIZE} ${PROGRESS_RING.VIEWBOX_SIZE}`}
       >
         <defs>
-          <filter id="scrubber-shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <filter
+            height="200%"
+            id="scrubber-shadow"
+            width="200%"
+            x="-50%"
+            y="-50%"
+          >
             <feDropShadow
               dx="0"
               dy="1"
-              stdDeviation="2.5"
               floodColor="#000000"
               floodOpacity="0.4"
+              stdDeviation="2.5"
             />
           </filter>
         </defs>
 
         <circle
-          cx={PROGRESS_RING.VIEWBOX_SIZE / 2}
-          cy={PROGRESS_RING.VIEWBOX_SIZE / 2}
-          r={PROGRESS_RING.RADIUS}
           className={`fill-transparent ${
             isDark
               ? 'stroke-zinc-900 group-hover:stroke-zinc-800'
               : 'stroke-zinc-200 group-hover:stroke-zinc-300'
           }`}
+          cx={PROGRESS_RING.VIEWBOX_SIZE / 2}
+          cy={PROGRESS_RING.VIEWBOX_SIZE / 2}
+          r={PROGRESS_RING.RADIUS}
           strokeWidth={PROGRESS_RING.STROKE_WIDTH}
         />
 
         {/* Progress Arc */}
         {progressRatio >= 0.9999 ? (
           <circle
+            className={`fill-transparent ${isDark ? 'stroke-zinc-100' : 'stroke-zinc-800'}`}
             cx={PROGRESS_RING.VIEWBOX_SIZE / 2}
             cy={PROGRESS_RING.VIEWBOX_SIZE / 2}
             r={PROGRESS_RING.RADIUS}
-            className={`fill-transparent ${isDark ? 'stroke-zinc-100' : 'stroke-zinc-800'}`}
-            strokeWidth={isDragging ? PROGRESS_RING.STROKE_WIDTH + 1.5 : PROGRESS_RING.STROKE_WIDTH}
+            strokeWidth={
+              isDragging
+                ? PROGRESS_RING.STROKE_WIDTH + 1.5
+                : PROGRESS_RING.STROKE_WIDTH
+            }
           />
         ) : arcPath ? (
           <path
-            d={arcPath}
             className={`fill-transparent ${isDark ? 'stroke-zinc-100' : 'stroke-zinc-800'}`}
-            strokeWidth={isDragging ? PROGRESS_RING.STROKE_WIDTH + 1.5 : PROGRESS_RING.STROKE_WIDTH}
+            d={arcPath}
             strokeLinecap="round"
+            strokeWidth={
+              isDragging
+                ? PROGRESS_RING.STROKE_WIDTH + 1.5
+                : PROGRESS_RING.STROKE_WIDTH
+            }
           />
         ) : null}
 
         {/* Draggable Scrubber Knob / Handle pinned exactly to (knobX, knobY) */}
         <g>
           <circle
+            className={`${
+              isDark
+                ? 'fill-zinc-100 stroke-zinc-950'
+                : 'fill-zinc-900 stroke-zinc-50'
+            }`}
             cx={knobX}
             cy={knobY}
-            r={isDragging ? 9 : 7.5}
             filter="url(#scrubber-shadow)"
-            className={`${
-              isDark ? 'fill-zinc-100 stroke-zinc-950' : 'fill-zinc-900 stroke-zinc-50'
-            }`}
+            r={isDragging ? 9 : 7.5}
             strokeWidth={isDragging ? 3 : 2.5}
           />
           <circle
+            className={`${isDark ? 'fill-zinc-950' : 'fill-zinc-50'}`}
             cx={knobX}
             cy={knobY}
             r={isDragging ? 3 : 2}
-            className={`${isDark ? 'fill-zinc-950' : 'fill-zinc-50'}`}
           />
         </g>
       </svg>

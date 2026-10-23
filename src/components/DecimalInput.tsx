@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 
 export interface DecimalInputProps {
-  value: number;
-  min?: number;
-  max?: number;
-  step?: string | number;
-  onChange: (val: number) => void;
-  className?: string;
   'aria-label'?: string;
+  className?: string;
+  max?: number;
+  min?: number;
+  onChange: (val: number) => void;
+  step?: string | number;
+  value: number;
 }
 
 export function DecimalInput({
@@ -59,15 +59,15 @@ export function DecimalInput({
 
   return (
     <input
-      type="number"
-      step={step}
-      min={min}
-      max={max}
-      value={localVal}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      className={className}
       aria-label={ariaLabel}
+      className={className}
+      max={max}
+      min={min}
+      onBlur={handleBlur}
+      onChange={handleChange}
+      step={step}
+      type="number"
+      value={localVal}
     />
   );
 }
