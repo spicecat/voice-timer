@@ -21,4 +21,11 @@ export interface TimerDuration {
   seconds: number;
 }
 
+export interface TimerStep {
+  hours: number;
+  id: string;
+  minutes: number;
+  seconds: number;
+}
+
 export type Theme = 'dark' | 'light';

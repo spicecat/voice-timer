@@ -18,21 +18,7 @@ export const DEFAULT_NEW_STEP_SECONDS = 30;
 
 export const DEFAULT_TARGET_LOOPS = 5;
 
-export const DEFAULT_STEPS = [
-  {hours: 0, id: '1', minutes: 1, seconds: 0},
-  {hours: 0, id: '2', minutes: 0, seconds: 30},
-];
-
-export const TIMER_PRESETS = [
-  {label: '30s', seconds: 30},
-  {label: '1m', seconds: 60},
-  {label: '3m', seconds: 180},
-  {label: '5m', seconds: 300},
-  {label: '10m', seconds: 600},
-  {label: '15m', seconds: 900},
-  {label: '30m', seconds: 1800},
-  {label: '60m', seconds: 3600},
-] as const;
+export const DEFAULT_STEPS = [{hours: 0, id: '1', minutes: 0, seconds: 15}];
 
 export const DEFAULT_VOICE_STYLE: VoiceStyle = 'natural';
 export const DEFAULT_VOLUME = 1.0;

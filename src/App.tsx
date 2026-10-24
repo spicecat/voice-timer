@@ -7,13 +7,13 @@ import {useEffect} from 'react';
 import {
   Header,
   KeyboardHints,
+  SegmentList,
   SettingsPanel,
-  TimerConfigPanel,
   TimerControls,
   TimerDisplay,
 } from './components';
 import {sharedStyles} from './constants';
-import {useCustomTimer} from './hooks/use-custom-timer';
+import {useIntervalTimer} from './hooks/use-interval-timer';
 import {useKeyboardShortcuts} from './hooks/use-keyboard-shortcuts';
 import {useTheme} from './hooks/use-theme';
 import {formatTime} from './utils/format-time';
@@ -22,7 +22,8 @@ export default function App() {
   const {isDark, toggleTheme} = useTheme();
 
   const {
-    duration,
+    steps,
+    currentStepIndex,
     soundMode,
     volume,
     language,
@@ -31,21 +32,22 @@ export default function App() {
     currentDuration,
     circumference,
     isDragging,
-    setDuration,
-    setPresetSeconds,
     setSoundMode,
     setVolume,
     setLanguage,
     togglePlay,
     handleReset,
+    updateStep,
+    addSegment,
+    removeSegment,
+    copySegment,
     handleTestSound,
     handleSeekStart,
     handleSeek,
     handleSeekEnd,
     handleAdjustTime,
-  } = useCustomTimer();
+  } = useIntervalTimer();
 
-  // Update document title dynamically based on timer state and time left
   useEffect(() => {
     const formatted = formatTime(timeLeft, false);
     if (status === 'running') {
@@ -59,7 +61,6 @@ export default function App() {
     }
   }, [timeLeft, status]);
 
-  // Register hotkeys (Space for Play/Pause, R for Reset, T for Theme, ← → for Seek)
   useKeyboardShortcuts({
     onAdjustTime: handleAdjustTime,
     onReset: handleReset,
@@ -73,12 +74,9 @@ export default function App() {
         isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900'
       }`}
     >
-      {/* Top Bar: Title & Theme toggle */}
       <Header isDark={isDark} onToggleTheme={toggleTheme} />
 
-      {/* Main Center Area */}
       <main className="w-full max-w-sm flex flex-col items-center my-auto py-4">
-        {/* Continuous Progress Ring & Big Digits */}
         <TimerDisplay
           circumference={circumference}
           currentDuration={currentDuration}
@@ -91,7 +89,6 @@ export default function App() {
           timeLeft={timeLeft}
         />
 
-        {/* Play/Pause & Reset Action Controls */}
         <TimerControls
           isDark={isDark}
           onReset={handleReset}
@@ -99,20 +96,20 @@ export default function App() {
           status={status}
         />
 
-        {/* Configuration Controls Section */}
         <div
           className={`w-full mt-10 space-y-5 border-t pt-6 ${sharedStyles.sectionDivider(isDark)}`}
         >
-          {/* Timer Duration: Quick presets + h/m/s input */}
-          <TimerConfigPanel
-            duration={duration}
+          <SegmentList
+            currentStepIndex={currentStepIndex}
             isDark={isDark}
-            onSelectPreset={setPresetSeconds}
-            onUpdateDuration={setDuration}
+            onAddSegment={addSegment}
+            onCopySegment={copySegment}
+            onRemoveSegment={removeSegment}
+            onUpdateStep={updateStep}
             status={status}
+            steps={steps}
           />
 
-          {/* Settings: Sound mode, Volume and Language */}
           <SettingsPanel
             isDark={isDark}
             language={language}
@@ -126,7 +123,6 @@ export default function App() {
         </div>
       </main>
 
-      {/* Keyboard Shortcuts Legend Footer */}
       <KeyboardHints isDark={isDark} />
     </div>
   );
