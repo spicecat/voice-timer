@@ -17,6 +17,7 @@ import {useIntervalTimer} from './hooks/use-interval-timer';
 import {useKeyboardShortcuts} from './hooks/use-keyboard-shortcuts';
 import {useTheme} from './hooks/use-theme';
 import {formatTime} from './utils/format-time';
+import {getTimerDurationSec} from './utils/time-calculations';
 
 export default function App() {
   const {isDark, toggleTheme} = useTheme();
@@ -67,6 +68,15 @@ export default function App() {
     onToggleTheme: toggleTheme,
   });
 
+  const totalDuration = steps.reduce(
+    (sum, step) => sum + getTimerDurationSec(step),
+    0,
+  );
+  const elapsedBeforeCurrent = steps
+    .slice(0, currentStepIndex)
+    .reduce((sum, step) => sum + getTimerDurationSec(step), 0);
+  const elapsedDuration = elapsedBeforeCurrent + (currentDuration - timeLeft);
+
   return (
     <div
       className={`min-h-screen flex flex-col items-center justify-between p-6 select-none ${
@@ -75,8 +85,11 @@ export default function App() {
     >
       <Header
         currentStepIndex={currentStepIndex}
+        elapsedDuration={elapsedDuration}
         isDark={isDark}
         onToggleTheme={toggleTheme}
+        totalDuration={totalDuration}
+        totalSegments={steps.length}
       />
 
       <main className="w-full max-w-sm flex flex-col items-center my-auto py-4">
