@@ -30,7 +30,6 @@ export default function App() {
     status,
     timeLeft,
     currentDuration,
-    circumference,
     isDragging,
     setSoundMode,
     setVolume,
@@ -78,7 +77,6 @@ export default function App() {
 
       <main className="w-full max-w-sm flex flex-col items-center my-auto py-4">
         <TimerDisplay
-          circumference={circumference}
           currentDuration={currentDuration}
           isDark={isDark}
           isDragging={isDragging}

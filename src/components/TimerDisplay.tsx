@@ -3,7 +3,6 @@ import {PROGRESS_RING} from '../constants';
 import {formatTime} from '../utils/format-time';
 
 export interface TimerDisplayProps {
-  circumference: number;
   currentDuration: number;
   isDark: boolean;
   isDragging?: boolean;

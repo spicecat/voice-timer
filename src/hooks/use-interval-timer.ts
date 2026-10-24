@@ -5,7 +5,6 @@ import {
   DEFAULT_VOICE_STYLE,
   DEFAULT_VOLUME,
   getBrowserLanguage,
-  PROGRESS_RING,
 } from '../constants';
 import {
   initAudioContext,
@@ -20,14 +19,12 @@ import type {
   SupportedLanguage,
   TimerStatus,
   TimerStep,
-  VoiceStyle,
 } from '../types';
 import {clamp, getTimerDurationSec} from '../utils';
 import {useLocalStorage} from './use-local-storage';
 
 export interface UseIntervalTimerReturn {
   addSegment: () => void;
-  circumference: number;
   copySegment: (id: string) => void;
   currentDuration: number;
   currentStepIndex: number;
@@ -54,7 +51,6 @@ export interface UseIntervalTimerReturn {
     minutes: number,
     seconds: number,
   ) => void;
-  voiceStyle: VoiceStyle;
   volume: number;
 }
 
@@ -87,10 +83,6 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
   const [volume, setVolumeState] = useLocalStorage<number>(
     'customtimer_volume',
     DEFAULT_VOLUME,
-  );
-  const [voiceStyle] = useLocalStorage<VoiceStyle>(
-    'customtimer_voice_style',
-    DEFAULT_VOICE_STYLE,
   );
   const [language, setLanguage] = useLocalStorage<SupportedLanguage>(
     'customtimer_language',
@@ -141,13 +133,6 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     [setVolumeState],
   );
 
-  const setLanguageState = useCallback(
-    (lang: SupportedLanguage) => {
-      setLanguage(lang);
-    },
-    [setLanguage],
-  );
-
   // Sync idle time
   useEffect(() => {
     if (status === 'idle') {
@@ -176,7 +161,8 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
       initAudioContext();
       if (soundMode === 'voice') {
         const num = getAnnouncementNumber(Math.ceil(dur));
-        if (num !== null) playVoiceNumber(num, voiceStyle, language, volume);
+        if (num !== null)
+          playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
       } else if (soundMode === 'chime') {
         playChime('start', volume);
       }
@@ -189,7 +175,6 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     currentStepIndex,
     safeSteps,
     soundMode,
-    voiceStyle,
     language,
     volume,
     handleTimerComplete,
@@ -222,7 +207,7 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
           if (soundMode === 'voice') {
             const num = getAnnouncementNumber(currentWholeSecond);
             if (num !== null)
-              playVoiceNumber(num, voiceStyle, language, volume);
+              playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
           } else if (soundMode === 'chime') {
             playChime('beep', volume);
           }
@@ -240,7 +225,7 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
       }
       lastTimestampRef.current = null;
     };
-  }, [status, soundMode, voiceStyle, language, volume]);
+  }, [status, soundMode, language, volume]);
 
   const togglePlay = useCallback(() => {
     initAudioContext();
@@ -257,20 +242,22 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
         lastSecondCrossedRef.current = Math.ceil(full);
         if (soundMode === 'voice') {
           const num = getAnnouncementNumber(Math.ceil(full));
-          if (num !== null) playVoiceNumber(num, voiceStyle, language, volume);
+          if (num !== null)
+            playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
         }
         if (soundMode === 'chime') playChime('start', volume);
       } else {
         lastSecondCrossedRef.current = Math.ceil(timeLeft);
         if (soundMode === 'voice') {
           const num = getAnnouncementNumber(Math.ceil(timeLeft));
-          if (num !== null) playVoiceNumber(num, voiceStyle, language, volume);
+          if (num !== null)
+            playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
         }
         if (soundMode === 'chime') playChime('beep', volume);
       }
       setStatus('running');
     }
-  }, [status, safeSteps, soundMode, voiceStyle, language, volume, timeLeft]);
+  }, [status, safeSteps, soundMode, language, volume, timeLeft]);
 
   const handleReset = useCallback(() => {
     initAudioContext();
@@ -285,22 +272,23 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     if (wasActive && soundMode !== 'off') {
       if (soundMode === 'voice') {
         const num = getAnnouncementNumber(Math.ceil(full));
-        if (num !== null) playVoiceNumber(num, voiceStyle, language, volume);
+        if (num !== null)
+          playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
       } else if (soundMode === 'chime') {
         playChime('beep', volume);
       }
     }
-  }, [status, safeSteps, soundMode, voiceStyle, language, volume]);
+  }, [status, safeSteps, soundMode, language, volume]);
 
   const handleTestSound = useCallback(() => {
     const num = getAnnouncementNumber(Math.ceil(timeLeft)) || 3;
     testSound(soundMode === 'voice' ? 'voice' : 'chime', {
       lang: language,
       num,
-      voiceStyle,
+      voiceStyle: DEFAULT_VOICE_STYLE,
       volume,
     });
-  }, [soundMode, timeLeft, voiceStyle, language, volume]);
+  }, [soundMode, timeLeft, language, volume]);
 
   const handleSeekStart = useCallback(() => {
     setIsDragging(true);
@@ -340,7 +328,7 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
           if (soundMode === 'voice') {
             const num = getAnnouncementNumber(Math.ceil(curr));
             if (num !== null)
-              playVoiceNumber(num, voiceStyle, language, volume);
+              playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
           } else if (soundMode === 'chime') {
             playChime('beep', volume);
           }
@@ -350,7 +338,7 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
         return curr;
       });
     }
-  }, [soundMode, voiceStyle, language, volume, handleTimerComplete]);
+  }, [soundMode, language, volume, handleTimerComplete]);
 
   const handleAdjustTime = useCallback(
     (delta: number) => {
@@ -413,11 +401,8 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     [setSteps],
   );
 
-  const circumference = 2 * Math.PI * PROGRESS_RING.RADIUS;
-
   return {
     addSegment,
-    circumference,
     copySegment,
     currentDuration,
     currentStepIndex,
@@ -430,7 +415,7 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     isDragging,
     language,
     removeSegment,
-    setLanguage: setLanguageState,
+    setLanguage,
     setSoundMode,
     setVolume,
     soundMode,
@@ -439,7 +424,6 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     timeLeft,
     togglePlay,
     updateStep,
-    voiceStyle,
     volume,
   };
 }

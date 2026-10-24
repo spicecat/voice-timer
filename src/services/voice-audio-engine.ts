@@ -284,21 +284,6 @@ export async function testSound(
   }
 }
 
-/**
- * Backward compatible export for speakNumber.
- */
-export async function speakNumber(
-  num: number | string,
-  lang: SupportedLanguage = DEFAULT_LANGUAGE,
-  volume = 0.8,
-): Promise<void> {
-  const parsed =
-    typeof num === 'number' ? num : Number.parseInt(String(num), 10);
-  if (Number.isFinite(parsed)) {
-    await playVoiceNumber(parsed, DEFAULT_VOICE_STYLE, lang, volume);
-  }
-}
-
 export type ChimeType = 'beep' | 'start' | 'finish';
 
 /**

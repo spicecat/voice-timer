@@ -20,20 +20,3 @@ export function formatTime(totalSeconds: number, showTenths = true): string {
   }
   return `${pad(minutes)}:${pad(seconds)}${tenthsStr}`;
 }
-
-/**
- * Formats seconds into human readable duration e.g. "4m 15s" or "1h 20m"
- */
-export function formatDurationHuman(totalSeconds: number): string {
-  const safe = Math.round(totalSeconds);
-  const hours = Math.floor(safe / 3600);
-  const minutes = Math.floor((safe % 3600) / 60);
-  const seconds = safe % 60;
-
-  const parts: string[] = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0 || hours > 0) parts.push(`${minutes}m`);
-  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-
-  return parts.join(' ');
-}
