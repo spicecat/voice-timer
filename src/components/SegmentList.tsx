@@ -1,7 +1,7 @@
 import {Copy, Plus, Trash2} from 'lucide-react';
 import {memo} from 'react';
 import {sharedStyles} from '../constants';
-import type {TimerStep} from '../types';
+import type {TimerStatus, TimerStep} from '../types';
 import {DecimalInput} from './DecimalInput';
 
 export interface SegmentListProps {
@@ -16,7 +16,7 @@ export interface SegmentListProps {
     minutes: number,
     seconds: number,
   ) => void;
-  status: string;
+  status: TimerStatus;
   steps: TimerStep[];
 }
 
@@ -107,6 +107,7 @@ export const SegmentList = memo(function SegmentList({
               <DecimalInput
                 aria-label="Segment seconds"
                 className={`w-14 ${sharedStyles.numberInput(isDark)} ${disabled ? 'opacity-50' : ''}`}
+                disabled={disabled}
                 max={59.99}
                 min={0}
                 onChange={(val) =>

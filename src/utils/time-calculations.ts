@@ -9,7 +9,10 @@ export function getTimerDurationSec(duration: TimerDuration): number {
     (duration.hours ?? 0) * 3600 +
     (duration.minutes ?? 0) * 60 +
     (duration.seconds ?? 0);
-  const maxLimit = 59 * 3600 + 59 * 60 + 59;
+  const maxLimit =
+    TIMER_LIMITS.MAX_HOURS * 3600 +
+    TIMER_LIMITS.MAX_MINUTES * 60 +
+    TIMER_LIMITS.MAX_SECONDS;
   return Math.max(
     TIMER_LIMITS.MIN_TIMER_DURATION_SEC,
     Math.min(maxLimit, Math.round(total * 100) / 100),

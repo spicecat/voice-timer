@@ -221,6 +221,7 @@ export async function playVoiceNumber(
   lang: SupportedLanguage = DEFAULT_LANGUAGE,
   volume = 0.8,
 ): Promise<void> {
+  if (!Number.isFinite(num)) return;
   const wholeNumber = Math.max(0, Math.floor(num));
   stopAllAudio();
 

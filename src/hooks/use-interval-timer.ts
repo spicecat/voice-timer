@@ -268,7 +268,6 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     const full = getTimerDurationSec(first);
     setTimeLeft(full);
     lastSecondCrossedRef.current = Math.ceil(full);
-    setStatus('idle');
     if (wasActive && soundMode !== 'off') {
       if (soundMode === 'voice') {
         const num = getAnnouncementNumber(Math.ceil(full));

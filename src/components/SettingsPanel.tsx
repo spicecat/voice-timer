@@ -104,9 +104,10 @@ export const SettingsPanel = memo(function SettingsPanel({
                 }`}
                 max="100"
                 min="0"
-                onChange={(e) =>
-                  onVolumeChange(Number.parseInt(e.target.value, 10) / 100)
-                }
+                onChange={(e) => {
+                  const parsed = Number.parseInt(e.target.value, 10);
+                  if (!Number.isNaN(parsed)) onVolumeChange(parsed / 100);
+                }}
                 step="5"
                 type="range"
                 value={Math.round(volume * 100)}

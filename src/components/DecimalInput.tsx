@@ -3,6 +3,7 @@ import {useEffect, useState} from 'react';
 export interface DecimalInputProps {
   'aria-label'?: string;
   className?: string;
+  disabled?: boolean;
   max?: number;
   min?: number;
   onChange: (val: number) => void;
@@ -17,6 +18,7 @@ export function DecimalInput({
   step = 'any',
   onChange,
   className,
+  disabled = false,
   'aria-label': ariaLabel,
 }: DecimalInputProps) {
   const [localVal, setLocalVal] = useState<string>(() => value.toString());
@@ -61,6 +63,7 @@ export function DecimalInput({
     <input
       aria-label={ariaLabel}
       className={className}
+      disabled={disabled}
       max={max}
       min={min}
       onBlur={handleBlur}

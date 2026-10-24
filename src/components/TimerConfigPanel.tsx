@@ -61,6 +61,7 @@ export const TimerConfigPanel = memo(function TimerConfigPanel({
           <DecimalInput
             aria-label="Timer seconds"
             className={`w-14 ${sharedStyles.numberInput(isDark)} ${disabled ? 'opacity-50' : ''}`}
+            disabled={disabled}
             max={59.99}
             min={0}
             onChange={(val) =>
