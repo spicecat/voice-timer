@@ -73,7 +73,11 @@ export default function App() {
         isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900'
       }`}
     >
-      <Header isDark={isDark} onToggleTheme={toggleTheme} />
+      <Header
+        currentStepIndex={currentStepIndex}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+      />
 
       <main className="w-full max-w-sm flex flex-col items-center my-auto py-4">
         <TimerDisplay

@@ -3,20 +3,27 @@ import {memo} from 'react';
 import {sharedStyles} from '../constants';
 
 export interface HeaderProps {
+  currentStepIndex?: number;
   isDark: boolean;
   onToggleTheme: () => void;
+  segmentNumber?: number;
 }
 
 export const Header = memo(function Header({
+  currentStepIndex,
   isDark,
   onToggleTheme,
+  segmentNumber,
 }: HeaderProps) {
+  const number =
+    segmentNumber ??
+    (currentStepIndex !== undefined ? currentStepIndex + 1 : 1);
   return (
     <header className="w-full max-w-sm flex items-center justify-between text-xs">
       <span
         className={`font-medium tracking-wide ${sharedStyles.textSubtle(isDark)}`}
       >
-        Custom Timer
+        {number}
       </span>
 
       <button
