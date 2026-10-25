@@ -1,5 +1,6 @@
 import {Pause, Play, RotateCcw} from 'lucide-react';
 import {memo} from 'react';
+import {useTranslation} from '../hooks/use-translation';
 import type {TimerStatus} from '../types';
 
 export interface TimerControlsProps {
@@ -15,12 +16,13 @@ export const TimerControls = memo(function TimerControls({
   onTogglePlay,
   onReset,
 }: TimerControlsProps) {
+  const {t} = useTranslation();
   const isRunning = status === 'running';
 
   return (
     <div className="flex items-center gap-4 mt-8">
       <button
-        aria-label={isRunning ? 'Pause' : 'Start'}
+        aria-label={isRunning ? t('controls.pause') : t('controls.play')}
         className={`w-16 h-16 rounded-full flex items-center justify-center shadow-sm ${
           isDark
             ? 'bg-zinc-100 hover:bg-white text-zinc-950'
@@ -37,14 +39,14 @@ export const TimerControls = memo(function TimerControls({
       </button>
 
       <button
-        aria-label="Reset timer"
+        aria-label={t('controls.reset')}
         className={`w-12 h-12 rounded-full border flex items-center justify-center ${
           isDark
             ? 'border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-zinc-100'
             : 'border-zinc-300 hover:border-zinc-400 text-zinc-600 hover:text-zinc-950'
         }`}
         onClick={onReset}
-        title="Reset timer without pausing (R)"
+        title={t('controls.resetTooltip')}
         type="button"
       >
         <RotateCcw className="w-4 h-4" />

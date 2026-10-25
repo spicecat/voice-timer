@@ -1,0 +1,87 @@
+{
+  "appName": "Voice Timer",
+  "appTitle": {
+    "completed": "[Completed] — Voice Timer",
+    "idle": "Voice Timer",
+    "paused": "[Paused {formatted}] — Voice Timer",
+    "running": "[{formatted}] — Voice Timer"
+  },
+  "controls": {
+    "pause": "Pause",
+    "play": "Play",
+    "reset": "Reset timer",
+    "resetTooltip": "Reset (R)"
+  },
+  "header": {
+    "segmentProgress": "Segment {segment} of {totalSegments}",
+    "segmentProgressWithDuration": "Segment {segment} of {totalSegments} · {remaining} / {totalDuration}",
+    "toggleTheme": "Toggle Theme",
+    "toggleThemeWithShortcut": "Toggle Theme (T)"
+  },
+  "keyboardHints": {
+    "all": "All",
+    "mute": "Mute",
+    "next": "Next",
+    "play": "Play",
+    "seek": "Seek",
+    "vol": "Vol"
+  },
+  "segments": {
+    "add": "Add",
+    "copy": "Copy segment",
+    "delete": "Delete segment",
+    "hoursAriaLabel": "Segment hours",
+    "hoursShort": "h",
+    "minutesAriaLabel": "Segment minutes",
+    "minutesShort": "m",
+    "secondsAriaLabel": "Segment seconds",
+    "secondsShort": "s",
+    "title": "Segments"
+  },
+  "settings": {
+    "chime": "Chime",
+    "language": "Language",
+    "languageAriaLabel": "Voice language",
+    "off": "Off",
+    "sound": "Sound",
+    "testSound": "Test Sound",
+    "voice": "Voice",
+    "volume": "Volume",
+    "volumeAriaLabel": "Sound volume"
+  },
+  "shortcuts": {
+    "categories": {
+      "audioControls": "Audio Controls",
+      "displayInterface": "Display & Interface",
+      "segmentsNavigation": "Segments & Navigation",
+      "timerPlayback": "Timer & Playback"
+    },
+    "close": "Close",
+    "gotIt": "Got it",
+    "items": {
+      "closeCheatsheet": "Close cheatsheet",
+      "cycleSound": "Cycle sound mode",
+      "fineVolume": "Fine volume (±5%)",
+      "jumpToSegment": "Jump to segment 1–9",
+      "largeSeek": "Large seek (±5s)",
+      "nextSegment": "Next segment",
+      "playPause": "Play / Pause",
+      "prevSegment": "Previous segment",
+      "resetTimer": "Reset timer",
+      "restartSegment": "Restart current segment",
+      "seek": "Seek (±1s)",
+      "toggleCheatsheet": "Toggle shortcuts",
+      "toggleFullscreen": "Toggle Fullscreen",
+      "toggleMute": "Toggle mute / unmute",
+      "toggleTheme": "Toggle theme",
+      "volumeUpDown": "Volume (±10%)"
+    },
+    "subtitle": "Quick shortcuts",
+    "title": "Keyboard Shortcuts"
+  },
+  "timer": {
+    "dialHint": "Drag to set time",
+    "remainingText": "{time} remaining",
+    "setDuration": "Set timer duration"
+  }
+}

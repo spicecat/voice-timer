@@ -10,14 +10,18 @@ export interface UseThemeReturn {
 }
 
 export function useTheme(): UseThemeReturn {
-  const [theme, setTheme] = useLocalStorage<Theme>('voice-timer_theme', () => {
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-    }
-    return 'dark';
-  });
+  const [theme, setTheme] = useLocalStorage<Theme>(
+    'voice_timer_theme',
+    () => {
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+      }
+      return 'dark';
+    },
+    'voice-timer_theme',
+  );
 
   const isDark = theme === 'dark';
 

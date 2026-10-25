@@ -1,17 +1,8 @@
+import type {LanguageConfig, SupportedLanguage} from '../locales';
+
+export type {LanguageConfig, SupportedLanguage};
+
 export type SoundMode = 'voice' | 'chime' | 'off';
-
-export type VoiceStyle = 'natural' | 'digits';
-
-/** Derived from the shared language manifest: src/constants/languages.json */
-export type SupportedLanguage =
-  keyof typeof import('../constants/languages.json');
-
-export interface LanguageConfig {
-  audioPath: string;
-  code: SupportedLanguage;
-  label: string;
-  speechSynthesisLang: string;
-}
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'completed';
 
@@ -21,7 +12,7 @@ export interface TimerDuration {
   seconds: number;
 }
 
-export interface TimerStep {
+export interface TimerSegment {
   hours: number;
   id: string;
   minutes: number;

@@ -1,5 +1,6 @@
-import {useCallback, useRef} from 'react';
+import {memo, useCallback, useRef} from 'react';
 import {PROGRESS_RING} from '../constants';
+import {useTranslation} from '../hooks/use-translation';
 import {formatTime} from '../utils/format-time';
 
 export interface TimerDisplayProps {
@@ -13,7 +14,7 @@ export interface TimerDisplayProps {
   timeLeft: number;
 }
 
-export function TimerDisplay({
+export const TimerDisplay = memo(function TimerDisplay({
   timeLeft,
   currentDuration,
   isDark,
@@ -23,11 +24,14 @@ export function TimerDisplay({
   onSeekEnd,
   onAdjustTime,
 }: TimerDisplayProps) {
+  const {t} = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const prevAngleRef = useRef<number | null>(null);
+  const isClampedAtMaxRef = useRef(false);
+  const isClampedAtZeroRef = useRef(false);
 
-  // Calculates time from pointer event directly in unrotated coordinates
+  // Calculates time from pointer event directly in unrotated coordinates with sticky boundary wrapping
   const updateTimeFromPointer = useCallback(
     (clientX: number, clientY: number) => {
       if (!containerRef.current || currentDuration <= 0 || !onSeek) return;
@@ -41,17 +45,29 @@ export function TimerDisplay({
       const prevAngle = prevAngleRef.current;
       prevAngleRef.current = angleDeg;
 
-      let ratio = angleDeg / 360;
-
-      // Handle 12 o'clock boundary wrapping when dragging
       if (prevAngle !== null) {
-        if (prevAngle > 300 && angleDeg < 60) {
-          ratio = 1.0;
-        } else if (prevAngle < 60 && angleDeg > 300) {
-          ratio = 0.0;
+        // Crossing from near-full (clockwise) past 12 o'clock into [0, 60] -> clamp at 100%
+        if ((prevAngle > 300 && angleDeg < 60) || isClampedAtMaxRef.current) {
+          if (angleDeg < 60 || angleDeg > 330) {
+            isClampedAtMaxRef.current = true;
+            onSeek(currentDuration);
+            return;
+          }
+          isClampedAtMaxRef.current = false;
+        }
+
+        // Crossing from near-zero (counter-clockwise) past 12 o'clock into [300, 360] -> clamp at 0%
+        if ((prevAngle < 60 && angleDeg > 300) || isClampedAtZeroRef.current) {
+          if (angleDeg > 300 || angleDeg < 30) {
+            isClampedAtZeroRef.current = true;
+            onSeek(0);
+            return;
+          }
+          isClampedAtZeroRef.current = false;
         }
       }
 
+      const ratio = Math.max(0, Math.min(1, angleDeg / 360));
       onSeek(ratio * currentDuration);
     },
     [currentDuration, onSeek],
@@ -67,6 +83,8 @@ export function TimerDisplay({
 
     isDraggingRef.current = true;
     prevAngleRef.current = null;
+    isClampedAtMaxRef.current = false;
+    isClampedAtZeroRef.current = false;
     onSeekStart?.();
     updateTimeFromPointer(e.clientX, e.clientY);
   };
@@ -81,6 +99,8 @@ export function TimerDisplay({
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     prevAngleRef.current = null;
+    isClampedAtMaxRef.current = false;
+    isClampedAtZeroRef.current = false;
 
     try {
       if (e.currentTarget.hasPointerCapture(e.pointerId)) {
@@ -130,11 +150,11 @@ export function TimerDisplay({
 
   return (
     <div
-      aria-label="Set timer duration"
+      aria-label={t('timer.setDuration')}
       aria-valuemax={currentDuration}
       aria-valuemin={0}
       aria-valuenow={Math.round(timeLeft * 10) / 10}
-      aria-valuetext={`${formatTime(timeLeft)} remaining`}
+      aria-valuetext={t('timer.remainingText', {time: formatTime(timeLeft)})}
       className={`relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center select-none touch-none rounded-full cursor-grab active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-4 group ${
         isDark
           ? 'focus-visible:ring-zinc-400 focus-visible:ring-offset-zinc-950'
@@ -148,12 +168,11 @@ export function TimerDisplay({
       ref={containerRef}
       role="slider"
       tabIndex={0}
-      title="Click or drag around the dial to set time"
+      title={t('timer.dialHint')}
     >
       <svg
-        aria-label="Timer Progress"
+        aria-hidden="true"
         className="w-full h-full pointer-events-none overflow-visible"
-        role="img"
         viewBox={`0 0 ${PROGRESS_RING.VIEWBOX_SIZE} ${PROGRESS_RING.VIEWBOX_SIZE}`}
       >
         <defs>
@@ -247,4 +266,4 @@ export function TimerDisplay({
       </div>
     </div>
   );
-}
+});

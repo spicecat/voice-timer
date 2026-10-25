@@ -3,28 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {useEffect} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   Header,
   KeyboardHints,
   SegmentList,
   SettingsPanel,
+  ShortcutsModal,
   TimerControls,
   TimerDisplay,
 } from './components';
 import {sharedStyles} from './constants';
+import {I18nProvider} from './contexts/i18n-context';
 import {useIntervalTimer} from './hooks/use-interval-timer';
 import {useKeyboardShortcuts} from './hooks/use-keyboard-shortcuts';
 import {useTheme} from './hooks/use-theme';
+import {translate} from './locales';
 import {formatTime} from './utils/format-time';
-import {getTimerDurationSec} from './utils/time-calculations';
+import {getTimerDurationSeconds} from './utils/time-calculations';
 
 export default function App() {
   const {isDark, toggleTheme} = useTheme();
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const {
-    steps,
-    currentStepIndex,
+    segments,
+    currentSegmentIndex,
     soundMode,
     volume,
     language,
@@ -32,113 +36,175 @@ export default function App() {
     timeLeft,
     currentDuration,
     isDragging,
+    adjustTime,
+    adjustVolume,
+    cycleSoundMode,
+    goToNextSegment,
+    goToPreviousSegment,
+    goToSegment,
     setSoundMode,
     setVolume,
     setLanguage,
     togglePlay,
-    handleReset,
-    updateStep,
+    toggleMute,
+    reset,
+    updateSegment,
     addSegment,
     removeSegment,
     copySegment,
-    handleTestSound,
-    handleSeekStart,
-    handleSeek,
-    handleSeekEnd,
-    handleAdjustTime,
+    testSound,
+    startSeek,
+    seek,
+    endSeek,
   } = useIntervalTimer();
 
+  const handleToggleHelp = useCallback(
+    () => setIsHelpOpen((prev) => !prev),
+    [],
+  );
+  const handleOpenHelp = useCallback(() => setIsHelpOpen(true), []);
+  const handleCloseHelp = useCallback(() => setIsHelpOpen(false), []);
+
+  // Update tab title only when whole-second string actually changes (avoids 60Hz redundant hook executions)
+  const formattedSeconds = formatTime(timeLeft, false);
+
   useEffect(() => {
-    const formatted = formatTime(timeLeft, false);
+    let title: string;
+
     if (status === 'running') {
-      document.title = `[${formatted}] — Voice Timer`;
+      title = translate(language, 'appTitle.running', {
+        formatted: formattedSeconds,
+      });
     } else if (status === 'paused') {
-      document.title = `[Paused ${formatted}] — Voice Timer`;
+      title = translate(language, 'appTitle.paused', {
+        formatted: formattedSeconds,
+      });
     } else if (status === 'completed') {
-      document.title = `[Completed] — Voice Timer`;
+      title = translate(language, 'appTitle.completed');
     } else {
-      document.title = `Voice Timer`;
+      title = translate(language, 'appTitle.idle');
     }
-  }, [timeLeft, status]);
+
+    if (document.title !== title) {
+      document.title = title;
+    }
+  }, [formattedSeconds, status, language]);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
 
   useKeyboardShortcuts({
-    onAdjustTime: handleAdjustTime,
-    onReset: handleReset,
+    onAdjustTime: adjustTime,
+    onAdjustVolume: adjustVolume,
+    onCycleSoundMode: cycleSoundMode,
+    onGoToSegment: goToSegment,
+    onNextSegment: goToNextSegment,
+    onPrevSegment: goToPreviousSegment,
+    onReset: reset,
+    onToggleFullscreen: toggleFullscreen,
+    onToggleHelp: handleToggleHelp,
+    onToggleMute: toggleMute,
     onTogglePlay: togglePlay,
     onToggleTheme: toggleTheme,
   });
 
-  const totalDuration = steps.reduce(
-    (sum, step) => sum + getTimerDurationSec(step),
-    0,
+  const totalDuration = useMemo(
+    () =>
+      segments.reduce(
+        (sum, segment) => sum + getTimerDurationSeconds(segment),
+        0,
+      ),
+    [segments],
   );
-  const elapsedBeforeCurrent = steps
-    .slice(0, currentStepIndex)
-    .reduce((sum, step) => sum + getTimerDurationSec(step), 0);
-  const elapsedDuration = elapsedBeforeCurrent + (currentDuration - timeLeft);
+
+  const elapsedBeforeCurrent = useMemo(
+    () =>
+      segments
+        .slice(0, currentSegmentIndex)
+        .reduce((sum, segment) => sum + getTimerDurationSeconds(segment), 0),
+    [segments, currentSegmentIndex],
+  );
+
+  // Quantize elapsed duration to whole seconds so Header only re-renders when display changes (1Hz instead of 60Hz)
+  const elapsedDuration = Math.floor(
+    elapsedBeforeCurrent + (currentDuration - timeLeft),
+  );
 
   return (
-    <div
-      className={`min-h-screen flex flex-col items-center justify-between p-6 select-none ${
-        isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900'
-      }`}
-    >
-      <Header
-        currentStepIndex={currentStepIndex}
-        elapsedDuration={elapsedDuration}
-        isDark={isDark}
-        onToggleTheme={toggleTheme}
-        totalDuration={totalDuration}
-        totalSegments={steps.length}
-      />
-
-      <main className="w-full max-w-sm flex flex-col items-center my-auto py-4">
-        <TimerDisplay
-          currentDuration={currentDuration}
+    <I18nProvider language={language}>
+      <div
+        className={`min-h-screen flex flex-col items-center justify-between p-6 select-none ${
+          isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900'
+        }`}
+      >
+        <Header
+          currentSegmentIndex={currentSegmentIndex}
+          elapsedDuration={elapsedDuration}
           isDark={isDark}
-          isDragging={isDragging}
-          onAdjustTime={handleAdjustTime}
-          onSeek={handleSeek}
-          onSeekEnd={handleSeekEnd}
-          onSeekStart={handleSeekStart}
-          timeLeft={timeLeft}
+          onToggleTheme={toggleTheme}
+          totalDuration={totalDuration}
+          totalSegments={segments.length}
         />
 
-        <TimerControls
-          isDark={isDark}
-          onReset={handleReset}
-          onTogglePlay={togglePlay}
-          status={status}
-        />
-
-        <div
-          className={`w-full mt-10 space-y-5 border-t pt-6 ${sharedStyles.sectionDivider(isDark)}`}
-        >
-          <SegmentList
-            currentStepIndex={currentStepIndex}
+        <main className="w-full max-w-sm flex flex-col items-center my-auto py-4">
+          <TimerDisplay
+            currentDuration={currentDuration}
             isDark={isDark}
-            onAddSegment={addSegment}
-            onCopySegment={copySegment}
-            onRemoveSegment={removeSegment}
-            onUpdateStep={updateStep}
+            isDragging={isDragging}
+            onAdjustTime={adjustTime}
+            onSeek={seek}
+            onSeekEnd={endSeek}
+            onSeekStart={startSeek}
+            timeLeft={timeLeft}
+          />
+
+          <TimerControls
+            isDark={isDark}
+            onReset={reset}
+            onTogglePlay={togglePlay}
             status={status}
-            steps={steps}
           />
 
-          <SettingsPanel
-            isDark={isDark}
-            language={language}
-            onLanguageChange={setLanguage}
-            onSoundModeChange={setSoundMode}
-            onTestSound={handleTestSound}
-            onVolumeChange={setVolume}
-            soundMode={soundMode}
-            volume={volume}
-          />
-        </div>
-      </main>
+          <div
+            className={`w-full mt-10 space-y-5 border-t pt-6 ${sharedStyles.sectionDivider(isDark)}`}
+          >
+            <SegmentList
+              currentSegmentIndex={currentSegmentIndex}
+              isDark={isDark}
+              onAddSegment={addSegment}
+              onCopySegment={copySegment}
+              onRemoveSegment={removeSegment}
+              onUpdateSegment={updateSegment}
+              segments={segments}
+              status={status}
+            />
 
-      <KeyboardHints isDark={isDark} />
-    </div>
+            <SettingsPanel
+              isDark={isDark}
+              language={language}
+              onLanguageChange={setLanguage}
+              onSoundModeChange={setSoundMode}
+              onTestSound={testSound}
+              onVolumeChange={setVolume}
+              soundMode={soundMode}
+              volume={volume}
+            />
+          </div>
+        </main>
+
+        <KeyboardHints isDark={isDark} onOpenHelp={handleOpenHelp} />
+
+        <ShortcutsModal
+          isDark={isDark}
+          isOpen={isHelpOpen}
+          onClose={handleCloseHelp}
+        />
+      </div>
+    </I18nProvider>
   );
 }

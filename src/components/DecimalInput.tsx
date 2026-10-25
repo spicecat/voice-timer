@@ -21,14 +21,15 @@ export function DecimalInput({
   disabled = false,
   'aria-label': ariaLabel,
 }: DecimalInputProps) {
+  const [isFocused, setIsFocused] = useState(false);
   const [localVal, setLocalVal] = useState<string>(() => value.toString());
 
+  // Only synchronize from external value prop when the user is not actively editing
   useEffect(() => {
-    const parsed = Number.parseFloat(localVal);
-    if (parsed !== value && !Number.isNaN(value)) {
+    if (!isFocused) {
       setLocalVal(value.toString());
     }
-  }, [value, localVal]);
+  }, [value, isFocused]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
@@ -38,23 +39,30 @@ export function DecimalInput({
       return;
     }
     const parsed = Number.parseFloat(text);
-    if (!Number.isNaN(parsed)) {
-      onChange(Math.max(min, Math.min(max, parsed)));
+    if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+      const clamped = Math.max(min, Math.min(max, parsed));
+      onChange(clamped);
     }
   };
 
+  const handleFocus = () => {
+    setIsFocused(true);
+  };
+
   const handleBlur = () => {
+    setIsFocused(false);
     if (localVal === '' || localVal === '.') {
       setLocalVal('0');
       onChange(0);
     } else {
       const parsed = Number.parseFloat(localVal);
-      if (Number.isNaN(parsed)) {
+      if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
         setLocalVal(value.toString());
       } else {
         const clamped = Math.max(min, Math.min(max, parsed));
-        setLocalVal(clamped.toString());
-        onChange(clamped);
+        const rounded = Math.round(clamped * 100) / 100;
+        setLocalVal(rounded.toString());
+        onChange(rounded);
       }
     }
   };
@@ -68,6 +76,7 @@ export function DecimalInput({
       min={min}
       onBlur={handleBlur}
       onChange={handleChange}
+      onFocus={handleFocus}
       step={step}
       type="number"
       value={localVal}

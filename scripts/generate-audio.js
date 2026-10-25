@@ -16,49 +16,57 @@ const TRIM_THRESHOLD = 0.005;
 const PAD_START_SEC = 0.01;
 const PAD_END_SEC = 0.04;
 
-// --- Language definitions (loaded from src/constants/languages.json) ---
+// --- Language definitions (loaded from modular locale packs: src/locales/<lang>/voice.json) ---
 
-const LANGUAGES_MANIFEST_PATH = path.join(
-  __dirname,
-  '..',
-  'src',
-  'constants',
-  'languages.json',
-);
+const LOCALES_DIR = path.join(__dirname, '..', 'src', 'locales');
 
 function loadLanguages() {
-  let manifest;
-  try {
-    manifest = JSON.parse(fs.readFileSync(LANGUAGES_MANIFEST_PATH, 'utf8'));
-  } catch (err) {
-    throw new Error(
-      `Failed to read language manifest at ${LANGUAGES_MANIFEST_PATH}: ${err.message}`,
-    );
-  }
+  const entries = fs.readdirSync(LOCALES_DIR, {withFileTypes: true});
+  const languages = [];
 
-  return Object.entries(manifest).map(([code, lang]) => {
-    if (lang === null || typeof lang !== 'object' || Array.isArray(lang)) {
-      throw new Error(`languages.json: "${code}" must be an object`);
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const voiceJsonPath = path.join(LOCALES_DIR, entry.name, 'voice.json');
+    if (!fs.existsSync(voiceJsonPath)) continue;
+
+    let lang;
+    try {
+      lang = JSON.parse(fs.readFileSync(voiceJsonPath, 'utf8'));
+    } catch (err) {
+      throw new Error(
+        `Failed to read voice manifest at ${voiceJsonPath}: ${err.message}`,
+      );
     }
+
+    const code = lang.code || entry.name;
     if (
       !Array.isArray(lang.numbers) ||
       lang.numbers.length !== 60 ||
       lang.numbers.some((word) => typeof word !== 'string' || !word.trim())
     ) {
       throw new Error(
-        `${code}: "numbers" must be an array of exactly 60 non-empty number words (0-59), got ${Array.isArray(lang.numbers) ? `${lang.numbers.length} entries` : typeof lang.numbers}`,
+        `${code}: "numbers" in ${voiceJsonPath} must be an array of exactly 60 non-empty number words (0-59), got ${Array.isArray(lang.numbers) ? `${lang.numbers.length} entries` : typeof lang.numbers}`,
       );
     }
     if (typeof lang.voice !== 'string' || !lang.voice.trim()) {
-      throw new Error(`${code}: "voice" must be a non-empty string`);
+      throw new Error(
+        `${code}: "voice" in ${voiceJsonPath} must be a non-empty string`,
+      );
     }
-    return {
+
+    languages.push({
       code,
       numbers: lang.numbers,
       // SAY_VOICE env still overrides the manifest voice for ad-hoc testing
       voice: process.env.SAY_VOICE ?? lang.voice,
-    };
-  });
+    });
+  }
+
+  if (languages.length === 0) {
+    throw new Error(`No voice manifests found in ${LOCALES_DIR}`);
+  }
+
+  return languages;
 }
 
 const LANGUAGES = loadLanguages();

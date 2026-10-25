@@ -4,7 +4,7 @@ import type {TimerDuration} from '../types';
 /**
  * Calculates total seconds of timer duration with 2 decimal precision.
  */
-export function getTimerDurationSec(duration: TimerDuration): number {
+export function getTimerDurationSeconds(duration: TimerDuration): number {
   const total =
     (duration.hours ?? 0) * 3600 +
     (duration.minutes ?? 0) * 60 +
@@ -14,7 +14,7 @@ export function getTimerDurationSec(duration: TimerDuration): number {
     TIMER_LIMITS.MAX_MINUTES * 60 +
     TIMER_LIMITS.MAX_SECONDS;
   return Math.max(
-    TIMER_LIMITS.MIN_TIMER_DURATION_SEC,
+    TIMER_LIMITS.MIN_TIMER_DURATION_SECONDS,
     Math.min(maxLimit, Math.round(total * 100) / 100),
   );
 }

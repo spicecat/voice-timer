@@ -1,40 +1,48 @@
 import {Copy, Plus, Trash2} from 'lucide-react';
 import {memo} from 'react';
 import {sharedStyles} from '../constants';
-import type {TimerStatus, TimerStep} from '../types';
+import {useTranslation} from '../hooks/use-translation';
+import type {TimerSegment, TimerStatus} from '../types';
 import {DecimalInput} from './DecimalInput';
 
 export interface SegmentListProps {
-  currentStepIndex: number;
+  currentSegmentIndex?: number;
   isDark: boolean;
   onAddSegment: () => void;
   onCopySegment: (id: string) => void;
   onRemoveSegment: (id: string) => void;
-  onUpdateStep: (
+  onUpdateSegment: (
     id: string,
     hours: number,
     minutes: number,
     seconds: number,
   ) => void;
+  segments: TimerSegment[];
   status: TimerStatus;
-  steps: TimerStep[];
 }
 
 export const SegmentList = memo(function SegmentList({
-  steps,
-  currentStepIndex,
+  segments,
+  currentSegmentIndex = 0,
   status,
   isDark,
   onAddSegment,
-  onUpdateStep,
+  onUpdateSegment,
   onRemoveSegment,
   onCopySegment,
 }: SegmentListProps) {
+  const {t} = useTranslation();
+  const activeSegments = segments;
+  const activeIndex = currentSegmentIndex;
+  const updateHandler = onUpdateSegment;
   const disabled = status === 'running';
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-xs">
-        <span className={sharedStyles.textMuted(isDark)}>Segments</span>
+        <span className={sharedStyles.textMuted(isDark)}>
+          {t('segments.title')}
+        </span>
         <button
           className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] border cursor-pointer disabled:opacity-50 ${
             isDark
@@ -45,14 +53,14 @@ export const SegmentList = memo(function SegmentList({
           onClick={onAddSegment}
           type="button"
         >
-          <Plus className="w-3 h-3" /> Add
+          <Plus className="w-3 h-3" /> {t('segments.add')}
         </button>
       </div>
       <div className="space-y-2">
-        {steps.map((step, index) => (
+        {activeSegments.map((segment, index) => (
           <div
             className={`flex items-center gap-2 rounded border p-2 ${
-              index === currentStepIndex
+              index === activeIndex
                 ? isDark
                   ? 'border-zinc-600 bg-zinc-900'
                   : 'border-zinc-400 bg-zinc-100'
@@ -60,7 +68,7 @@ export const SegmentList = memo(function SegmentList({
                   ? 'border-zinc-800'
                   : 'border-zinc-200'
             }`}
-            key={step.id}
+            key={segment.id}
           >
             <span
               className={`text-[11px] w-4 ${sharedStyles.textSubtle(isDark)}`}
@@ -69,78 +77,95 @@ export const SegmentList = memo(function SegmentList({
             </span>
             <div className="flex items-center gap-1 font-mono-numbers">
               <input
-                aria-label="Segment hours"
+                aria-label={t('segments.hoursAriaLabel')}
                 className={`w-9 ${sharedStyles.numberInput(isDark)} disabled:opacity-50`}
                 disabled={disabled}
                 max="23"
                 min="0"
                 onChange={(e) =>
-                  onUpdateStep(
-                    step.id,
-                    Number.parseInt(e.target.value, 10) || 0,
-                    step.minutes,
-                    step.seconds,
+                  updateHandler(
+                    segment.id,
+                    Math.max(
+                      0,
+                      Math.min(23, Number.parseInt(e.target.value, 10) || 0),
+                    ),
+                    segment.minutes,
+                    segment.seconds,
                   )
                 }
                 type="number"
-                value={step.hours ?? 0}
+                value={segment.hours ?? 0}
               />
-              <span className={sharedStyles.textSubtle(isDark)}>h</span>
+              <span className={sharedStyles.textSubtle(isDark)}>
+                {t('segments.hoursShort')}
+              </span>
               <input
-                aria-label="Segment minutes"
+                aria-label={t('segments.minutesAriaLabel')}
                 className={`w-9 ${sharedStyles.numberInput(isDark)} disabled:opacity-50`}
                 disabled={disabled}
                 max="59"
                 min="0"
                 onChange={(e) =>
-                  onUpdateStep(
-                    step.id,
-                    step.hours ?? 0,
-                    Number.parseInt(e.target.value, 10) || 0,
-                    step.seconds,
+                  updateHandler(
+                    segment.id,
+                    segment.hours ?? 0,
+                    Math.max(
+                      0,
+                      Math.min(59, Number.parseInt(e.target.value, 10) || 0),
+                    ),
+                    segment.seconds,
                   )
                 }
                 type="number"
-                value={step.minutes}
+                value={segment.minutes}
               />
-              <span className={sharedStyles.textSubtle(isDark)}>m</span>
+              <span className={sharedStyles.textSubtle(isDark)}>
+                {t('segments.minutesShort')}
+              </span>
               <DecimalInput
-                aria-label="Segment seconds"
+                aria-label={t('segments.secondsAriaLabel')}
                 className={`w-14 ${sharedStyles.numberInput(isDark)} ${disabled ? 'opacity-50' : ''}`}
                 disabled={disabled}
                 max={59.99}
                 min={0}
                 onChange={(val) =>
-                  onUpdateStep(step.id, step.hours ?? 0, step.minutes, val)
+                  updateHandler(
+                    segment.id,
+                    segment.hours ?? 0,
+                    segment.minutes,
+                    val,
+                  )
                 }
                 step="any"
-                value={step.seconds}
+                value={segment.seconds}
               />
-              <span className={sharedStyles.textSubtle(isDark)}>s</span>
+              <span className={sharedStyles.textSubtle(isDark)}>
+                {t('segments.secondsShort')}
+              </span>
             </div>
             <div className="flex items-center gap-1 ml-auto">
               <button
-                aria-label="Copy segment"
+                aria-label={t('segments.copy')}
                 className={`p-1 rounded cursor-pointer disabled:opacity-50 ${
                   isDark
                     ? 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
                     : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100'
                 }`}
                 disabled={disabled}
-                onClick={() => onCopySegment(step.id)}
+                onClick={() => onCopySegment(segment.id)}
                 type="button"
               >
                 <Copy className="w-3.5 h-3.5" />
               </button>
               <button
-                aria-label="Delete segment"
+                aria-label={t('segments.delete')}
                 className={`p-1 rounded cursor-pointer disabled:opacity-50 ${
                   isDark
                     ? 'text-zinc-400 hover:text-red-400 hover:bg-zinc-800'
                     : 'text-zinc-600 hover:text-red-600 hover:bg-zinc-100'
                 }`}
-                disabled={disabled || steps.length <= 1}
-                onClick={() => onRemoveSegment(step.id)}
+                disabled={disabled || activeSegments.length <= 1}
+                onClick={() => onRemoveSegment(segment.id)}
                 type="button"
               >
                 <Trash2 className="w-3.5 h-3.5" />

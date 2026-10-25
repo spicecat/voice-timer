@@ -6,6 +6,7 @@ import {useCallback, useState} from 'react';
 export function useLocalStorage<T>(
   key: string,
   initialValue: T | (() => T),
+  legacyKey?: string,
 ): [T, (value: T | ((val: T) => T)) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
@@ -15,8 +16,20 @@ export function useLocalStorage<T>(
           : initialValue;
       }
       const item = window.localStorage.getItem(key);
-      if (item) {
-        return JSON.parse(item);
+      if (item !== null) {
+        const parsed = JSON.parse(item);
+        if (parsed !== null && parsed !== undefined) {
+          return parsed;
+        }
+      }
+      if (legacyKey) {
+        const legacyItem = window.localStorage.getItem(legacyKey);
+        if (legacyItem !== null) {
+          const parsed = JSON.parse(legacyItem);
+          if (parsed !== null && parsed !== undefined) {
+            return parsed;
+          }
+        }
       }
     } catch (error) {
       console.warn(`Error reading localStorage key "${key}":`, error);
@@ -30,9 +43,19 @@ export function useLocalStorage<T>(
     (value: T | ((val: T) => T)) => {
       try {
         setStoredValue((prev) => {
-          const valueToStore = value instanceof Function ? value(prev) : value;
+          const valueToStore =
+            typeof value === 'function'
+              ? (value as (val: T) => T)(prev)
+              : value;
           if (typeof window !== 'undefined') {
-            window.localStorage.setItem(key, JSON.stringify(valueToStore));
+            try {
+              window.localStorage.setItem(key, JSON.stringify(valueToStore));
+            } catch (storageError) {
+              console.warn(
+                `Failed to persist key "${key}" to localStorage:`,
+                storageError,
+              );
+            }
           }
           return valueToStore;
         });

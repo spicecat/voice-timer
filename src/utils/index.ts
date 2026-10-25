@@ -1,2 +1,2 @@
 export {formatTime} from './format-time';
-export {clamp, getTimerDurationSec} from './time-calculations';
+export {clamp, getTimerDurationSeconds} from './time-calculations';

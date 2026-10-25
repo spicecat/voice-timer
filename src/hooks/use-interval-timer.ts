@@ -1,8 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {
-  DEFAULT_NEW_STEP_SECONDS,
-  DEFAULT_STEPS,
-  DEFAULT_VOICE_STYLE,
+  DEFAULT_NEW_SEGMENT_SECONDS,
+  DEFAULT_SEGMENTS,
   DEFAULT_VOLUME,
   getBrowserLanguage,
 } from '../constants';
@@ -12,40 +11,46 @@ import {
   playVoiceNumber,
   preloadVoiceClips,
   stopAllAudio,
-  testSound,
+  testSound as testSoundService,
 } from '../services/voice-audio-engine';
 import type {
   SoundMode,
   SupportedLanguage,
+  TimerSegment,
   TimerStatus,
-  TimerStep,
 } from '../types';
-import {clamp, getTimerDurationSec} from '../utils';
+import {clamp, getTimerDurationSeconds} from '../utils';
 import {useLocalStorage} from './use-local-storage';
 
 export interface UseIntervalTimerReturn {
   addSegment: () => void;
+  adjustTime: (delta: number) => void;
+  adjustVolume: (delta: number) => void;
   copySegment: (id: string) => void;
   currentDuration: number;
-  currentStepIndex: number;
-  handleAdjustTime: (delta: number) => void;
-  handleReset: () => void;
-  handleSeek: (newTime: number) => void;
-  handleSeekEnd: () => void;
-  handleSeekStart: () => void;
-  handleTestSound: () => void;
+  currentSegmentIndex: number;
+  cycleSoundMode: () => void;
+  endSeek: () => void;
+  goToNextSegment: () => void;
+  goToPreviousSegment: () => void;
+  goToSegment: (index: number) => void;
   isDragging: boolean;
   language: SupportedLanguage;
   removeSegment: (id: string) => void;
+  reset: () => void;
+  seek: (newTime: number) => void;
+  segments: TimerSegment[];
   setLanguage: (lang: SupportedLanguage) => void;
   setSoundMode: (mode: SoundMode) => void;
   setVolume: (vol: number) => void;
   soundMode: SoundMode;
+  startSeek: () => void;
   status: TimerStatus;
-  steps: TimerStep[];
+  testSound: () => void;
   timeLeft: number;
+  toggleMute: () => void;
   togglePlay: () => void;
-  updateStep: (
+  updateSegment: (
     id: string,
     hours: number,
     minutes: number,
@@ -71,43 +76,69 @@ function getAnnouncementNumber(totalSeconds: number): number | null {
 }
 
 export function useIntervalTimer(): UseIntervalTimerReturn {
-  const [steps, setSteps] = useLocalStorage<TimerStep[]>(
+  const [segments, setSegments] = useLocalStorage<TimerSegment[]>(
+    'voice_timer_segments',
+    DEFAULT_SEGMENTS,
     'customtimer_steps',
-    DEFAULT_STEPS,
   );
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
   const [soundMode, setSoundModeState] = useLocalStorage<SoundMode>(
-    'customtimer_sound_mode',
+    'voice_timer_sound_mode',
     'chime',
+    'customtimer_sound_mode',
+  );
+  const [lastActiveSoundMode, setLastActiveSoundMode] = useState<SoundMode>(
+    soundMode !== 'off' ? soundMode : 'chime',
   );
   const [volume, setVolumeState] = useLocalStorage<number>(
-    'customtimer_volume',
+    'voice_timer_volume',
     DEFAULT_VOLUME,
+    'customtimer_volume',
   );
   const [language, setLanguage] = useLocalStorage<SupportedLanguage>(
-    'customtimer_language',
+    'voice_timer_language',
     getBrowserLanguage,
+    'customtimer_language',
   );
   const [status, setStatus] = useState<TimerStatus>('idle');
-  const [timeLeft, setTimeLeft] = useState<number>(() =>
-    getTimerDurationSec(steps[0] ?? DEFAULT_STEPS[0]),
-  );
+
+  const safeSegments =
+    Array.isArray(segments) && segments.length > 0
+      ? segments
+      : DEFAULT_SEGMENTS;
+  const clampedIndex = Math.min(currentSegmentIndex, safeSegments.length - 1);
+  const currentSegment = safeSegments[clampedIndex];
+  const currentDuration = getTimerDurationSeconds(currentSegment);
+
+  const [timeLeft, setTimeLeft] = useState<number>(() => currentDuration);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Synchronous refs to avoid stale closures during RAF and event updates
+  const timeLeftRef = useRef(currentDuration);
+  const currentSegmentIndexRef = useRef(clampedIndex);
+  currentSegmentIndexRef.current = clampedIndex;
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  const soundModeRef = useRef(soundMode);
+  soundModeRef.current = soundMode;
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+  const languageRef = useRef(language);
+  languageRef.current = language;
+  const safeSegmentsRef = useRef(safeSegments);
+  safeSegmentsRef.current = safeSegments;
+
   const wasRunningBeforeDragRef = useRef(false);
   const animFrameRef = useRef<number | null>(null);
   const lastTimestampRef = useRef<number | null>(null);
   const lastSecondCrossedRef = useRef<number | null>(null);
-
-  const safeSteps = steps.length > 0 ? steps : DEFAULT_STEPS;
-  const currentStep =
-    safeSteps[Math.min(currentStepIndex, safeSteps.length - 1)];
-  const currentDuration = getTimerDurationSec(currentStep);
 
   useEffect(() => {
     const totalSecs = Math.ceil(currentDuration);
     preloadVoiceClips(language, [totalSecs]);
   }, [language, currentDuration]);
 
+  // Clean up audio and RAF on unmount
   useEffect(() => {
     return () => {
       stopAllAudio();
@@ -115,16 +146,43 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     };
   }, []);
 
+  const triggerSegmentSound = useCallback(
+    (seconds: number, isInitial = false) => {
+      const mode = soundModeRef.current;
+      const vol = volumeRef.current;
+      const lang = languageRef.current;
+
+      if (mode === 'voice') {
+        const num = getAnnouncementNumber(seconds);
+        if (num !== null) {
+          playVoiceNumber(num, lang, vol);
+        }
+      } else if (mode === 'chime') {
+        playChime(isInitial ? 'start' : 'beep', vol);
+      }
+    },
+    [],
+  );
+
   const setSoundMode = useCallback(
     (mode: SoundMode) => {
       if (mode !== 'off') {
         initAudioContext();
         preloadVoiceClips(language);
+        setLastActiveSoundMode(mode);
       }
       setSoundModeState(mode);
     },
     [language, setSoundModeState],
   );
+
+  const toggleMute = useCallback(() => {
+    if (soundMode === 'off') {
+      setSoundMode(lastActiveSoundMode || 'chime');
+    } else {
+      setSoundMode('off');
+    }
+  }, [soundMode, lastActiveSoundMode, setSoundMode]);
 
   const setVolume = useCallback(
     (vol: number) => {
@@ -133,54 +191,107 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     [setVolumeState],
   );
 
-  // Sync idle time
+  const adjustVolume = useCallback(
+    (delta: number) => {
+      setVolumeState((prev) =>
+        clamp(Math.round((prev + delta) * 100) / 100, 0, 1),
+      );
+    },
+    [setVolumeState],
+  );
+
+  const cycleSoundMode = useCallback(() => {
+    const modes: SoundMode[] = ['voice', 'chime', 'off'];
+    const idx = modes.indexOf(soundMode);
+    const nextMode = modes[(idx + 1) % modes.length];
+    setSoundMode(nextMode);
+  }, [soundMode, setSoundMode]);
+
+  const goToSegment = useCallback(
+    (index: number) => {
+      const currentList = safeSegmentsRef.current;
+      const activeIdx = currentSegmentIndexRef.current;
+
+      if (index === -1) {
+        // Restart current segment
+        const dur = getTimerDurationSeconds(currentList[activeIdx]);
+        timeLeftRef.current = dur;
+        setTimeLeft(dur);
+        lastSecondCrossedRef.current = Math.ceil(dur);
+
+        if (statusRef.current === 'running') {
+          initAudioContext();
+          triggerSegmentSound(Math.ceil(dur), true);
+        } else if (statusRef.current === 'completed') {
+          setStatus('paused');
+        }
+        return;
+      }
+
+      if (index >= 0 && index < currentList.length) {
+        setCurrentSegmentIndex(index);
+        currentSegmentIndexRef.current = index;
+        const dur = getTimerDurationSeconds(currentList[index]);
+        timeLeftRef.current = dur;
+        setTimeLeft(dur);
+        lastSecondCrossedRef.current = Math.ceil(dur);
+
+        if (statusRef.current === 'running') {
+          initAudioContext();
+          triggerSegmentSound(Math.ceil(dur), true);
+        } else if (statusRef.current === 'completed') {
+          setStatus('paused');
+        }
+      }
+    },
+    [triggerSegmentSound],
+  );
+
+  const goToNextSegment = useCallback(() => {
+    if (currentSegmentIndex < safeSegments.length - 1) {
+      goToSegment(currentSegmentIndex + 1);
+    }
+  }, [currentSegmentIndex, safeSegments.length, goToSegment]);
+
+  const goToPreviousSegment = useCallback(() => {
+    const currentSegmentDur = getTimerDurationSeconds(
+      safeSegments[currentSegmentIndex],
+    );
+    if (
+      currentSegmentDur - timeLeftRef.current > 2 &&
+      currentSegmentIndex > 0
+    ) {
+      goToSegment(currentSegmentIndex);
+    } else if (currentSegmentIndex > 0) {
+      goToSegment(currentSegmentIndex - 1);
+    } else {
+      goToSegment(0);
+    }
+  }, [currentSegmentIndex, safeSegments, goToSegment]);
+
+  // Sync idle time when segments change
   useEffect(() => {
     if (status === 'idle') {
-      const first = safeSteps[0];
-      setCurrentStepIndex(0);
-      setTimeLeft(getTimerDurationSec(first));
+      const first = safeSegments[0];
+      const dur = getTimerDurationSeconds(first);
+      setCurrentSegmentIndex(0);
+      currentSegmentIndexRef.current = 0;
+      timeLeftRef.current = dur;
+      setTimeLeft(dur);
     }
-  }, [steps, status, safeSteps]);
+  }, [segments, status]);
 
   const handleTimerComplete = useCallback(() => {
     setStatus('completed');
+    timeLeftRef.current = 0;
     setTimeLeft(0);
     lastSecondCrossedRef.current = null;
-    if (soundMode !== 'off') playChime('finish', volume);
-  }, [soundMode, volume]);
-
-  // Advance segment when timeLeft hits 0
-  useEffect(() => {
-    if (status !== 'running' || timeLeft > 0) return;
-    if (currentStepIndex < safeSteps.length - 1) {
-      const nextIndex = currentStepIndex + 1;
-      setCurrentStepIndex(nextIndex);
-      const dur = getTimerDurationSec(safeSteps[nextIndex]);
-      setTimeLeft(dur);
-      lastSecondCrossedRef.current = Math.ceil(dur);
-      initAudioContext();
-      if (soundMode === 'voice') {
-        const num = getAnnouncementNumber(Math.ceil(dur));
-        if (num !== null)
-          playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
-      } else if (soundMode === 'chime') {
-        playChime('start', volume);
-      }
-    } else {
-      handleTimerComplete();
+    if (soundModeRef.current !== 'off') {
+      playChime('finish', volumeRef.current);
     }
-  }, [
-    timeLeft,
-    status,
-    currentStepIndex,
-    safeSteps,
-    soundMode,
-    language,
-    volume,
-    handleTimerComplete,
-  ]);
+  }, []);
 
-  // RAF loop
+  // RAF loop for smooth 60fps countdown with pure state updates and tab suspension resilience
   useEffect(() => {
     if (status !== 'running') {
       if (animFrameRef.current) {
@@ -190,34 +301,64 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
       lastTimestampRef.current = null;
       return;
     }
+
     lastTimestampRef.current = performance.now();
+
     const loop = (timestamp: number) => {
-      if (!lastTimestampRef.current) lastTimestampRef.current = timestamp;
+      if (!lastTimestampRef.current) {
+        lastTimestampRef.current = timestamp;
+      }
+
       const elapsedSec = (timestamp - lastTimestampRef.current) / 1000;
       lastTimestampRef.current = timestamp;
-      setTimeLeft((prev) => {
-        const next = Math.max(0, prev - elapsedSec);
-        const currentWholeSecond = Math.ceil(next);
-        if (
-          currentWholeSecond !== lastSecondCrossedRef.current &&
-          currentWholeSecond > 0 &&
-          next > 0
-        ) {
-          lastSecondCrossedRef.current = currentWholeSecond;
-          if (soundMode === 'voice') {
-            const num = getAnnouncementNumber(currentWholeSecond);
-            if (num !== null)
-              playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
-          } else if (soundMode === 'chime') {
-            playChime('beep', volume);
-          }
+
+      // Guard against giant gaps when browser tab was suspended
+      const safeElapsed = Math.min(elapsedSec, 2.0);
+      const prev = timeLeftRef.current;
+      const next = Math.max(0, prev - safeElapsed);
+
+      timeLeftRef.current = next;
+      setTimeLeft(next);
+
+      // Check whole second transition for sound announcements (PURE calculation outside of setState)
+      const currentWholeSecond = Math.ceil(next);
+      if (
+        currentWholeSecond !== lastSecondCrossedRef.current &&
+        currentWholeSecond > 0 &&
+        next > 0
+      ) {
+        lastSecondCrossedRef.current = currentWholeSecond;
+        triggerSegmentSound(currentWholeSecond, false);
+      }
+
+      // Check segment completion
+      if (next <= 0) {
+        const segs = safeSegmentsRef.current;
+        const currentIdx = currentSegmentIndexRef.current;
+
+        if (currentIdx < segs.length - 1) {
+          const nextIndex = currentIdx + 1;
+          currentSegmentIndexRef.current = nextIndex;
+          setCurrentSegmentIndex(nextIndex);
+
+          const nextDur = getTimerDurationSeconds(segs[nextIndex]);
+          timeLeftRef.current = nextDur;
+          setTimeLeft(nextDur);
+          lastSecondCrossedRef.current = Math.ceil(nextDur);
+
+          initAudioContext();
+          triggerSegmentSound(Math.ceil(nextDur), true);
+        } else {
+          handleTimerComplete();
+          return;
         }
-        if (next <= 0) return 0;
-        return next;
-      });
+      }
+
       animFrameRef.current = requestAnimationFrame(loop);
     };
+
     animFrameRef.current = requestAnimationFrame(loop);
+
     return () => {
       if (animFrameRef.current) {
         cancelAnimationFrame(animFrameRef.current);
@@ -225,74 +366,79 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
       }
       lastTimestampRef.current = null;
     };
-  }, [status, soundMode, language, volume]);
+  }, [status, triggerSegmentSound, handleTimerComplete]);
+
+  // Handle visibility changes so timestamp anchor doesn't cause sudden leap when returning to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && statusRef.current === 'running') {
+        lastTimestampRef.current = performance.now();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () =>
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const togglePlay = useCallback(() => {
     initAudioContext();
     preloadVoiceClips(language);
+
     if (status === 'running') {
       setStatus('paused');
       stopAllAudio();
     } else {
       if (status === 'completed') {
-        setCurrentStepIndex(0);
-        const first = safeSteps[0];
-        const full = getTimerDurationSec(first);
+        setCurrentSegmentIndex(0);
+        currentSegmentIndexRef.current = 0;
+        const first = safeSegments[0];
+        const full = getTimerDurationSeconds(first);
+        timeLeftRef.current = full;
         setTimeLeft(full);
         lastSecondCrossedRef.current = Math.ceil(full);
-        if (soundMode === 'voice') {
-          const num = getAnnouncementNumber(Math.ceil(full));
-          if (num !== null)
-            playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
-        }
-        if (soundMode === 'chime') playChime('start', volume);
+        triggerSegmentSound(Math.ceil(full), true);
       } else {
-        lastSecondCrossedRef.current = Math.ceil(timeLeft);
-        if (soundMode === 'voice') {
-          const num = getAnnouncementNumber(Math.ceil(timeLeft));
-          if (num !== null)
-            playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
-        }
-        if (soundMode === 'chime') playChime('beep', volume);
+        lastSecondCrossedRef.current = Math.ceil(timeLeftRef.current);
+        triggerSegmentSound(Math.ceil(timeLeftRef.current), true);
       }
       setStatus('running');
     }
-  }, [status, safeSteps, soundMode, language, volume, timeLeft]);
+  }, [status, safeSegments, language, triggerSegmentSound]);
 
-  const handleReset = useCallback(() => {
+  const reset = useCallback(() => {
     initAudioContext();
     stopAllAudio();
-    const wasActive = status === 'running' || status === 'completed';
-    setCurrentStepIndex(0);
-    const first = safeSteps[0];
-    const full = getTimerDurationSec(first);
+    const isRunning = status === 'running';
+
+    setCurrentSegmentIndex(0);
+    currentSegmentIndexRef.current = 0;
+    const first = safeSegments[0];
+    const full = getTimerDurationSeconds(first);
+    timeLeftRef.current = full;
     setTimeLeft(full);
     lastSecondCrossedRef.current = Math.ceil(full);
-    if (wasActive && soundMode !== 'off') {
-      if (soundMode === 'voice') {
-        const num = getAnnouncementNumber(Math.ceil(full));
-        if (num !== null)
-          playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
-      } else if (soundMode === 'chime') {
-        playChime('beep', volume);
-      }
-    }
-  }, [status, safeSteps, soundMode, language, volume]);
 
-  const handleTestSound = useCallback(() => {
-    const num = getAnnouncementNumber(Math.ceil(timeLeft)) || 3;
-    testSound(soundMode === 'voice' ? 'voice' : 'chime', {
+    if (isRunning) {
+      triggerSegmentSound(Math.ceil(full), true);
+    } else {
+      setStatus('idle');
+    }
+  }, [status, safeSegments, triggerSegmentSound]);
+
+  const testSound = useCallback(() => {
+    const num = getAnnouncementNumber(Math.ceil(timeLeftRef.current)) || 3;
+    testSoundService(soundMode === 'voice' ? 'voice' : 'chime', {
       lang: language,
       num,
-      voiceStyle: DEFAULT_VOICE_STYLE,
       volume,
     });
-  }, [soundMode, timeLeft, language, volume]);
+  }, [soundMode, language, volume]);
 
-  const handleSeekStart = useCallback(() => {
+  const startSeek = useCallback(() => {
     setIsDragging(true);
     initAudioContext();
     stopAllAudio();
+
     if (status === 'running') {
       wasRunningBeforeDragRef.current = true;
       setStatus('paused');
@@ -302,127 +448,140 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     }
   }, [status]);
 
-  const handleSeek = useCallback(
+  const seek = useCallback(
     (newTime: number) => {
       const clamped = clamp(
         Math.round(newTime * 100) / 100,
         0,
         currentDuration,
       );
+      timeLeftRef.current = clamped;
       setTimeLeft(clamped);
       lastSecondCrossedRef.current = Math.ceil(clamped);
     },
     [currentDuration],
   );
 
-  const handleSeekEnd = useCallback(() => {
+  const endSeek = useCallback(() => {
     setIsDragging(false);
     if (wasRunningBeforeDragRef.current) {
       wasRunningBeforeDragRef.current = false;
-      setTimeLeft((curr) => {
-        if (curr > 0.05) {
-          setStatus('running');
-          lastTimestampRef.current = performance.now();
-          lastSecondCrossedRef.current = Math.ceil(curr);
-          if (soundMode === 'voice') {
-            const num = getAnnouncementNumber(Math.ceil(curr));
-            if (num !== null)
-              playVoiceNumber(num, DEFAULT_VOICE_STYLE, language, volume);
-          } else if (soundMode === 'chime') {
-            playChime('beep', volume);
-          }
-        } else {
-          handleTimerComplete();
-        }
-        return curr;
-      });
+      const curr = timeLeftRef.current;
+      if (curr > 0.05) {
+        setStatus('running');
+        lastTimestampRef.current = performance.now();
+        lastSecondCrossedRef.current = Math.ceil(curr);
+        triggerSegmentSound(Math.ceil(curr), true);
+      } else {
+        handleTimerComplete();
+      }
     }
-  }, [soundMode, language, volume, handleTimerComplete]);
+  }, [triggerSegmentSound, handleTimerComplete]);
 
-  const handleAdjustTime = useCallback(
+  const adjustTime = useCallback(
     (delta: number) => {
       initAudioContext();
-      setTimeLeft((prev) => {
-        const next = clamp(
-          Math.round((prev + delta) * 10) / 10,
-          0,
-          currentDuration,
-        );
-        lastSecondCrossedRef.current = Math.ceil(next);
-        return next;
-      });
-      if (status === 'completed' || status === 'idle') setStatus('paused');
+      const prev = timeLeftRef.current;
+      const next = clamp(
+        Math.round((prev + delta) * 10) / 10,
+        0,
+        currentDuration,
+      );
+      timeLeftRef.current = next;
+      setTimeLeft(next);
+      lastSecondCrossedRef.current = Math.ceil(next);
+
+      if (status === 'completed' || status === 'idle') {
+        setStatus('paused');
+      }
     },
     [currentDuration, status],
   );
 
-  const updateStep = useCallback(
+  const updateSegment = useCallback(
     (id: string, hours: number, minutes: number, seconds: number) => {
-      setSteps((prev) =>
+      setSegments((prev) =>
         prev.map((s) => (s.id === id ? {...s, hours, minutes, seconds} : s)),
       );
     },
-    [setSteps],
+    [setSegments],
   );
 
   const addSegment = useCallback(() => {
-    setSteps((prev) => [
+    const newId =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    setSegments((prev) => [
       ...prev,
       {
         hours: 0,
-        id: String(Date.now()),
+        id: newId,
         minutes: 0,
-        seconds: DEFAULT_NEW_STEP_SECONDS,
+        seconds: DEFAULT_NEW_SEGMENT_SECONDS,
       },
     ]);
-  }, [setSteps]);
+  }, [setSegments]);
 
   const removeSegment = useCallback(
     (id: string) => {
-      setSteps((prev) =>
-        prev.length <= 1 ? prev : prev.filter((s) => s.id !== id),
-      );
+      setSegments((prev) => {
+        if (prev.length <= 1) return prev;
+        const filtered = prev.filter((s) => s.id !== id);
+        setCurrentSegmentIndex((curr) => Math.min(curr, filtered.length - 1));
+        return filtered;
+      });
     },
-    [setSteps],
+    [setSegments],
   );
 
   const copySegment = useCallback(
     (id: string) => {
-      setSteps((prev) => {
+      setSegments((prev) => {
         const idx = prev.findIndex((s) => s.id === id);
         if (idx === -1) return prev;
-        const copy = {...prev[idx], id: String(Date.now() + Math.random())};
+        const newId =
+          typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        const copy = {...prev[idx], id: newId};
         const next = [...prev];
         next.splice(idx + 1, 0, copy);
         return next;
       });
     },
-    [setSteps],
+    [setSegments],
   );
 
   return {
     addSegment,
+    adjustTime,
+    adjustVolume,
     copySegment,
     currentDuration,
-    currentStepIndex,
-    handleAdjustTime,
-    handleReset,
-    handleSeek,
-    handleSeekEnd,
-    handleSeekStart,
-    handleTestSound,
+    currentSegmentIndex: clampedIndex,
+    cycleSoundMode,
+    endSeek,
+    goToNextSegment,
+    goToPreviousSegment,
+    goToSegment,
     isDragging,
     language,
     removeSegment,
+    reset,
+    seek,
+    segments: safeSegments,
     setLanguage,
     setSoundMode,
     setVolume,
     soundMode,
+    startSeek,
     status,
-    steps: safeSteps,
+    testSound,
     timeLeft,
+    toggleMute,
     togglePlay,
-    updateStep,
+    updateSegment,
     volume,
   };
 }
