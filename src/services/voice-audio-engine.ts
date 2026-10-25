@@ -76,6 +76,15 @@ function getCacheKey(lang: SupportedLanguage, num: number): string {
   return `${lang}:${num}`;
 }
 
+function getResolvedAudioUrl(relativePath: string): string {
+  const baseUrl = import.meta.env.BASE_URL || './';
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  const cleanPath = relativePath.startsWith('/')
+    ? relativePath.slice(1)
+    : relativePath;
+  return `${cleanBase}${cleanPath}`;
+}
+
 /**
  * Fetches and decodes an audio file into an in-memory AudioBuffer for a specific language.
  * Utilizes IndexedDB for offline persistence across browser sessions.
@@ -98,7 +107,7 @@ async function getOrFetchBuffer(
   if (!ctx) return null;
 
   const langConfig = getLanguageConfig(lang);
-  const audioUrl = `${langConfig.audioPath}/${num}.opus`;
+  const audioUrl = getResolvedAudioUrl(`${langConfig.audioPath}/${num}.opus`);
 
   const fetchPromise = (async () => {
     try {
@@ -428,7 +437,7 @@ async function getOrFetchChimeBuffer(
         return decoded;
       }
 
-      const response = await fetch(`/audio/${type}.opus`);
+      const response = await fetch(getResolvedAudioUrl(`/audio/${type}.opus`));
       if (!response.ok) return null;
       const arrayBuffer = await response.arrayBuffer();
 

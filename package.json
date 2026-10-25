@@ -6,6 +6,8 @@
   "scripts": {
     "build": "vite build",
     "clean": "rm -rf dist",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
     "dev": "vite --port=3000 --host=0.0.0.0",
     "generate:audio": "node scripts/generate-audio.js",
     "lint": "biome check . --reporter=concise --colors=off && tsc --noEmit --pretty false",
@@ -27,6 +29,7 @@
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "gh-pages": "^6.3.0",
     "husky": "^9.1.7",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2"
