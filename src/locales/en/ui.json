@@ -64,7 +64,6 @@
       "timerPlayback": "Timer & Playback"
     },
     "close": "Close",
-    "gotIt": "Got it",
     "items": {
       "closeCheatsheet": "Close cheatsheet",
       "cycleSound": "Cycle sound mode",
@@ -83,7 +82,6 @@
       "toggleTheme": "Toggle theme",
       "volumeUpDown": "Volume (±10%)"
     },
-    "subtitle": "Quick shortcuts",
     "title": "Keyboard Shortcuts"
   },
   "timer": {

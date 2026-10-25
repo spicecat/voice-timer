@@ -45,7 +45,6 @@ export default function App() {
     goToSegment,
     setSoundMode,
     setVolume,
-    setLanguage,
     togglePlay,
     toggleMute,
     reset,
@@ -54,18 +53,12 @@ export default function App() {
     removeSegment,
     copySegment,
     moveSegment,
-    testSound,
     startSeek,
     seek,
     endSeek,
   } = useSegmentTimer();
 
-  const {
-    isActive: wakeLockActive,
-    isSupported: wakeLockSupported,
-    wakeLockEnabled,
-    setWakeLockEnabled,
-  } = useWakeLock(status === 'running');
+  const {isActive: wakeLockActive} = useWakeLock(status === 'running');
 
   const handleToggleHelp = useCallback(
     () => setIsHelpOpen((prev) => !prev),
@@ -74,19 +67,23 @@ export default function App() {
   const handleOpenHelp = useCallback(() => setIsHelpOpen(true), []);
   const handleCloseHelp = useCallback(() => setIsHelpOpen(false), []);
 
-  // Update tab title only when whole-second string actually changes (avoids 60Hz redundant hook executions)
-  const formattedSeconds = formatTime(timeLeft, false);
+  // Quantize whole seconds so title string only updates on 1Hz boundary
+  const displaySeconds = Math.floor(timeLeft);
+  const formattedTitleSeconds = useMemo(
+    () => formatTime(displaySeconds, false),
+    [displaySeconds],
+  );
 
   useEffect(() => {
     let title: string;
 
     if (status === 'running') {
       title = translate(language, 'appTitle.running', {
-        formatted: formattedSeconds,
+        formatted: formattedTitleSeconds,
       });
     } else if (status === 'paused') {
       title = translate(language, 'appTitle.paused', {
-        formatted: formattedSeconds,
+        formatted: formattedTitleSeconds,
       });
     } else if (status === 'completed') {
       title = translate(language, 'appTitle.completed');
@@ -97,7 +94,7 @@ export default function App() {
     if (document.title !== title) {
       document.title = title;
     }
-  }, [formattedSeconds, status, language]);
+  }, [formattedTitleSeconds, status, language]);
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -197,17 +194,10 @@ export default function App() {
 
             <SettingsPanel
               isDark={isDark}
-              language={language}
-              onLanguageChange={setLanguage}
               onSoundModeChange={setSoundMode}
-              onTestSound={testSound}
               onVolumeChange={setVolume}
-              onWakeLockChange={setWakeLockEnabled}
               soundMode={soundMode}
               volume={volume}
-              wakeLockActive={wakeLockActive}
-              wakeLockEnabled={wakeLockEnabled}
-              wakeLockSupported={wakeLockSupported}
             />
           </div>
         </main>

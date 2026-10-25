@@ -1,6 +1,7 @@
 import {
   DEFAULT_LANGUAGE,
   type SupportedLanguage,
+  type TranslationKeyPath,
   type Translations,
   UI_TRANSLATIONS,
 } from './registry';
@@ -38,7 +39,7 @@ function resolvePath(source: unknown, path: string): unknown {
 
 export function translate(
   lang: string,
-  keyPath: string,
+  keyPath: TranslationKeyPath,
   params?: Record<string, string | number>,
 ): string {
   const translations = getTranslations(lang);

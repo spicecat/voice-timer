@@ -1,4 +1,5 @@
 export {Header} from './Header';
+export {Kbd} from './Kbd';
 export {KeyboardHints} from './KeyboardHints';
 export {SegmentList} from './SegmentList';
 export {SettingsPanel} from './SettingsPanel';

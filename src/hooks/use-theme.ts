@@ -25,11 +25,16 @@ export function useTheme(): UseThemeReturn {
 
   const isDark = theme === 'dark';
 
-  // Synchronize document root class and color-scheme for native browser controls
+  // Synchronize document root class, color-scheme, and meta theme-color
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.documentElement.classList.toggle('dark', isDark);
       document.documentElement.style.colorScheme = theme;
+
+      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', isDark ? '#09090b' : '#fafafa');
+      }
     }
   }, [theme, isDark]);
 

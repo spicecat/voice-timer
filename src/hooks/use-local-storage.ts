@@ -1,4 +1,4 @@
-import {useCallback, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 
 /**
  * Custom hook to sync state with localStorage with safety fallback for SSR/IFrame environments.
@@ -65,6 +65,26 @@ export function useLocalStorage<T>(
     },
     [key],
   );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === key && e.newValue !== null) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed !== null && parsed !== undefined) {
+            setStoredValue(parsed);
+          }
+        } catch {
+          // Ignore parse errors from external events
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [key]);
 
   return [storedValue, setValue];
 }

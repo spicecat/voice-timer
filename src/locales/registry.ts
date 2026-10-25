@@ -19,6 +19,14 @@ export interface LanguageConfig {
 
 export type Translations = typeof enUi;
 
+export type NestedKeyOf<ObjectType extends object> = {
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
+    ? `${Key}.${NestedKeyOf<ObjectType[Key]>}`
+    : `${Key}`;
+}[keyof ObjectType & (string | number)];
+
+export type TranslationKeyPath = NestedKeyOf<Translations> | (string & {});
+
 export const SUPPORTED_LANGUAGES: Record<SupportedLanguage, LanguageConfig> = {
   en: {
     audioPath: enVoice.audioPath,

@@ -2,6 +2,7 @@ import {createContext, type ReactNode, useContext, useMemo} from 'react';
 import {
   DEFAULT_LOCALE,
   getTranslations,
+  type TranslationKeyPath,
   type Translations,
   translate,
 } from '../locales';
@@ -9,7 +10,10 @@ import type {SupportedLanguage} from '../types';
 
 export interface I18nContextValue {
   language: SupportedLanguage;
-  t: (keyPath: string, params?: Record<string, string | number>) => string;
+  t: (
+    keyPath: TranslationKeyPath,
+    params?: Record<string, string | number>,
+  ) => string;
   translations: Translations;
 }
 
@@ -31,8 +35,10 @@ export function I18nProvider({language, children}: I18nProviderProps) {
     const translations = getTranslations(language);
     return {
       language,
-      t: (keyPath: string, params?: Record<string, string | number>) =>
-        translate(language, keyPath, params),
+      t: (
+        keyPath: TranslationKeyPath,
+        params?: Record<string, string | number>,
+      ) => translate(language, keyPath, params),
       translations,
     };
   }, [language]);

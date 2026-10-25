@@ -41,9 +41,6 @@ export const SegmentList = memo(function SegmentList({
   onMoveSegment,
 }: SegmentListProps) {
   const {t} = useTranslation();
-  const activeSegments = segments;
-  const activeIndex = currentSegmentIndex;
-  const updateHandler = onUpdateSegment;
   const disabled = status === 'running';
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -69,10 +66,10 @@ export const SegmentList = memo(function SegmentList({
         </button>
       </div>
       <ul className="space-y-2">
-        {activeSegments.map((segment, index) => (
+        {segments.map((segment, index) => (
           <li
             className={`flex items-center gap-1.5 rounded border p-2 transition-colors ${
-              index === activeIndex
+              index === currentSegmentIndex
                 ? isDark
                   ? 'border-zinc-600 bg-zinc-900'
                   : 'border-zinc-400 bg-zinc-100'
@@ -125,7 +122,7 @@ export const SegmentList = memo(function SegmentList({
                     ? 'hover:text-zinc-200 hover:bg-zinc-800'
                     : 'hover:text-zinc-800 hover:bg-zinc-100'
                 }`}
-                disabled={disabled || activeSegments.length <= 1}
+                disabled={disabled || segments.length <= 1}
                 title={t('segments.dragHandle')}
                 type="button"
               >
@@ -153,7 +150,7 @@ export const SegmentList = memo(function SegmentList({
                       ? 'hover:text-zinc-200 hover:bg-zinc-800'
                       : 'hover:text-zinc-800 hover:bg-zinc-100'
                   }`}
-                  disabled={disabled || index === activeSegments.length - 1}
+                  disabled={disabled || index === segments.length - 1}
                   onClick={() => onMoveSegment(index, index + 1)}
                   title={t('segments.moveDown')}
                   type="button"
@@ -179,7 +176,7 @@ export const SegmentList = memo(function SegmentList({
                 max="23"
                 min="0"
                 onChange={(e) =>
-                  updateHandler(
+                  onUpdateSegment(
                     segment.id,
                     Math.max(
                       0,
@@ -202,7 +199,7 @@ export const SegmentList = memo(function SegmentList({
                 max="59"
                 min="0"
                 onChange={(e) =>
-                  updateHandler(
+                  onUpdateSegment(
                     segment.id,
                     segment.hours ?? 0,
                     Math.max(
@@ -225,7 +222,7 @@ export const SegmentList = memo(function SegmentList({
                 max={59.99}
                 min={0}
                 onChange={(val) =>
-                  updateHandler(
+                  onUpdateSegment(
                     segment.id,
                     segment.hours ?? 0,
                     segment.minutes,
@@ -260,7 +257,7 @@ export const SegmentList = memo(function SegmentList({
                     ? 'text-zinc-400 hover:text-red-400 hover:bg-zinc-800'
                     : 'text-zinc-600 hover:text-red-600 hover:bg-zinc-100'
                 }`}
-                disabled={disabled || activeSegments.length <= 1}
+                disabled={disabled || segments.length <= 1}
                 onClick={() => onRemoveSegment(segment.id)}
                 type="button"
               >

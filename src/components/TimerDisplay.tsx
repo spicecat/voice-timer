@@ -1,4 +1,4 @@
-import {memo, useCallback, useRef} from 'react';
+import {memo, useCallback, useMemo, useRef} from 'react';
 import {PROGRESS_RING} from '../constants';
 import {useTranslation} from '../hooks/use-translation';
 import {formatTime} from '../utils/format-time';
@@ -128,25 +128,29 @@ export const TimerDisplay = memo(function TimerDisplay({
   };
 
   // Math in unrotated coordinates: center = (150, 150), radius = 135
-  const progressRatio =
-    currentDuration > 0
-      ? Math.max(0, Math.min(1, timeLeft / currentDuration))
-      : 0;
-  const rad = progressRatio * 2 * Math.PI;
+  const {progressRatio, knobX, knobY, arcPath} = useMemo(() => {
+    const ratio =
+      currentDuration > 0
+        ? Math.max(0, Math.min(1, timeLeft / currentDuration))
+        : 0;
+    const rad = ratio * 2 * Math.PI;
 
-  // Knob position in unrotated SVG space (0 = top / 12 o'clock)
-  const knobX =
-    PROGRESS_RING.VIEWBOX_SIZE / 2 + PROGRESS_RING.RADIUS * Math.sin(rad);
-  const knobY =
-    PROGRESS_RING.VIEWBOX_SIZE / 2 - PROGRESS_RING.RADIUS * Math.cos(rad);
+    // Knob position in unrotated SVG space (0 = top / 12 o'clock)
+    const kX =
+      PROGRESS_RING.VIEWBOX_SIZE / 2 + PROGRESS_RING.RADIUS * Math.sin(rad);
+    const kY =
+      PROGRESS_RING.VIEWBOX_SIZE / 2 - PROGRESS_RING.RADIUS * Math.cos(rad);
 
-  const largeArcFlag = progressRatio > 0.5 ? 1 : 0;
+    const largeArcFlag = ratio > 0.5 ? 1 : 0;
 
-  // Arc path starting at 12 o'clock (150, 15) and sweeping clockwise to (knobX, knobY)
-  const arcPath =
-    progressRatio > 0.0001 && progressRatio < 0.9999
-      ? `M ${PROGRESS_RING.VIEWBOX_SIZE / 2} ${PROGRESS_RING.VIEWBOX_SIZE / 2 - PROGRESS_RING.RADIUS} A ${PROGRESS_RING.RADIUS} ${PROGRESS_RING.RADIUS} 0 ${largeArcFlag} 1 ${knobX} ${knobY}`
-      : null;
+    // Arc path starting at 12 o'clock (150, 15) and sweeping clockwise to (kX, kY)
+    const path =
+      ratio > 0.0001 && ratio < 0.9999
+        ? `M ${PROGRESS_RING.VIEWBOX_SIZE / 2} ${PROGRESS_RING.VIEWBOX_SIZE / 2 - PROGRESS_RING.RADIUS} A ${PROGRESS_RING.RADIUS} ${PROGRESS_RING.RADIUS} 0 ${largeArcFlag} 1 ${kX} ${kY}`
+        : null;
+
+    return {arcPath: path, knobX: kX, knobY: kY, progressRatio: ratio};
+  }, [currentDuration, timeLeft]);
 
   return (
     <div

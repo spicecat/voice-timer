@@ -1,6 +1,7 @@
 import {X} from 'lucide-react';
 import {memo, useEffect, useMemo, useRef} from 'react';
 import {useTranslation} from '../hooks/use-translation';
+import {Kbd} from './Kbd';
 
 export interface ShortcutsModalProps {
   isDark: boolean;
@@ -132,12 +133,6 @@ export const ShortcutsModal = memo(function ShortcutsModal({
 
   if (!isOpen) return null;
 
-  const kbdClass = `px-1.5 py-0.5 rounded border text-[11px] font-mono ${
-    isDark
-      ? 'bg-zinc-800 border-zinc-700 text-zinc-200'
-      : 'bg-zinc-100 border-zinc-300 text-zinc-800'
-  }`;
-
   return (
     <div
       aria-labelledby="shortcuts-modal-title"
@@ -158,18 +153,15 @@ export const ShortcutsModal = memo(function ShortcutsModal({
             : 'bg-white border-zinc-200 text-zinc-900'
         }`}
       >
-        <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
+        <div
+          className={`flex items-center justify-between pb-3 border-b ${
+            isDark ? 'border-zinc-800' : 'border-zinc-200'
+          }`}
+        >
           <div>
             <h2 className="text-base font-semibold" id="shortcuts-modal-title">
               {t('shortcuts.title')}
             </h2>
-            <p
-              className={`text-xs ${
-                isDark ? 'text-zinc-400' : 'text-zinc-500'
-              }`}
-            >
-              {t('shortcuts.subtitle')}
-            </p>
           </div>
           <button
             aria-label={t('shortcuts.close')}
@@ -224,9 +216,9 @@ export const ShortcutsModal = memo(function ShortcutsModal({
                             {k}
                           </span>
                         ) : (
-                          <kbd className={kbdClass} key={k}>
+                          <Kbd isDark={isDark} key={k}>
                             {k}
-                          </kbd>
+                          </Kbd>
                         ),
                       )}
                     </div>
@@ -235,30 +227,6 @@ export const ShortcutsModal = memo(function ShortcutsModal({
               </div>
             </div>
           ))}
-        </div>
-
-        <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex justify-between items-center text-[11px]">
-          <span
-            className={`inline-flex items-center gap-1 ${
-              isDark ? 'text-zinc-500' : 'text-zinc-400'
-            }`}
-          >
-            <kbd className={kbdClass}>Esc</kbd>
-            <span>or</span>
-            <kbd className={kbdClass}>?</kbd>
-            <span>to close</span>
-          </span>
-          <button
-            className={`px-3 py-1 rounded border font-medium cursor-pointer ${
-              isDark
-                ? 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700'
-                : 'bg-zinc-100 border-zinc-300 text-zinc-800 hover:bg-zinc-200'
-            }`}
-            onClick={onClose}
-            type="button"
-          >
-            {t('shortcuts.gotIt')}
-          </button>
         </div>
       </div>
     </div>

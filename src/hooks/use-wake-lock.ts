@@ -1,19 +1,11 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {useLocalStorage} from './use-local-storage';
 
 export interface UseWakeLockReturn {
   isActive: boolean;
   isSupported: boolean;
-  setWakeLockEnabled: (enabled: boolean) => void;
-  wakeLockEnabled: boolean;
 }
 
 export function useWakeLock(isTimerRunning: boolean): UseWakeLockReturn {
-  const [wakeLockEnabled, setWakeLockEnabled] = useLocalStorage<boolean>(
-    'voice_timer_wake_lock',
-    true,
-    'customtimer_wake_lock',
-  );
   const [isActive, setIsActive] = useState(false);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
@@ -50,20 +42,16 @@ export function useWakeLock(isTimerRunning: boolean): UseWakeLockReturn {
   }, []);
 
   useEffect(() => {
-    if (isTimerRunning && wakeLockEnabled) {
+    if (isTimerRunning) {
       requestLock();
     } else {
       releaseLock();
     }
-  }, [isTimerRunning, wakeLockEnabled, requestLock, releaseLock]);
+  }, [isTimerRunning, requestLock, releaseLock]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (
-        document.visibilityState === 'visible' &&
-        isTimerRunning &&
-        wakeLockEnabled
-      ) {
+      if (document.visibilityState === 'visible' && isTimerRunning) {
         requestLock();
       }
     };
@@ -72,12 +60,10 @@ export function useWakeLock(isTimerRunning: boolean): UseWakeLockReturn {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isTimerRunning, wakeLockEnabled, requestLock]);
+  }, [isTimerRunning, requestLock]);
 
   return {
     isActive,
     isSupported,
-    setWakeLockEnabled,
-    wakeLockEnabled,
   };
 }

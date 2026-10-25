@@ -5,6 +5,10 @@ import {
   getLanguageConfig,
 } from '../constants';
 import type {SupportedLanguage} from '../types';
+import {
+  getCachedAudioArrayBuffer,
+  setCachedAudioArrayBuffer,
+} from './audio-idb';
 
 export type {ChimeType};
 
@@ -74,6 +78,7 @@ function getCacheKey(lang: SupportedLanguage, num: number): string {
 
 /**
  * Fetches and decodes an audio file into an in-memory AudioBuffer for a specific language.
+ * Utilizes IndexedDB for offline persistence across browser sessions.
  */
 async function getOrFetchBuffer(
   num: number,
@@ -97,9 +102,22 @@ async function getOrFetchBuffer(
 
   const fetchPromise = (async () => {
     try {
+      // 1. Try retrieving ArrayBuffer from IndexedDB
+      const idbBuffer = await getCachedAudioArrayBuffer(cacheKey);
+      if (idbBuffer) {
+        const decoded = await ctx.decodeAudioData(idbBuffer.slice(0));
+        audioBufferCache.set(cacheKey, decoded);
+        return decoded;
+      }
+
+      // 2. Network fetch fallback
       const response = await fetch(audioUrl);
       if (!response.ok) return null;
       const arrayBuffer = await response.arrayBuffer();
+
+      // Store copy in IndexedDB asynchronously
+      setCachedAudioArrayBuffer(cacheKey, arrayBuffer.slice(0)).catch(() => {});
+
       const decoded = await ctx.decodeAudioData(arrayBuffer);
       audioBufferCache.set(cacheKey, decoded);
       return decoded;
@@ -399,11 +417,23 @@ async function getOrFetchChimeBuffer(
   const ctx = await ensureAudioContext();
   if (!ctx) return null;
 
+  const cacheKey = `chime:${type}`;
+
   const fetchPromise = (async () => {
     try {
+      const idbBuffer = await getCachedAudioArrayBuffer(cacheKey);
+      if (idbBuffer) {
+        const decoded = await ctx.decodeAudioData(idbBuffer.slice(0));
+        chimeBufferCache.set(type, decoded);
+        return decoded;
+      }
+
       const response = await fetch(`/audio/${type}.opus`);
       if (!response.ok) return null;
       const arrayBuffer = await response.arrayBuffer();
+
+      setCachedAudioArrayBuffer(cacheKey, arrayBuffer.slice(0)).catch(() => {});
+
       const decoded = await ctx.decodeAudioData(arrayBuffer);
       chimeBufferCache.set(type, decoded);
       return decoded;
@@ -423,7 +453,6 @@ async function getOrFetchChimeBuffer(
 }
 
 export async function playChime(type: ChimeType, volume = 0.8): Promise<void> {
-  initAudioContext();
   const ctx = await ensureAudioContext();
   if (!ctx) return;
 
