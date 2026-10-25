@@ -22,7 +22,7 @@ import type {
 import {clamp, getTimerDurationSeconds} from '../utils';
 import {useLocalStorage} from './use-local-storage';
 
-export interface UseIntervalTimerReturn {
+export interface UseSegmentTimerReturn {
   addSegment: () => void;
   adjustTime: (delta: number) => void;
   adjustVolume: (delta: number) => void;
@@ -36,6 +36,7 @@ export interface UseIntervalTimerReturn {
   goToSegment: (index: number) => void;
   isDragging: boolean;
   language: SupportedLanguage;
+  moveSegment: (fromIndex: number, toIndex: number) => void;
   removeSegment: (id: string) => void;
   reset: () => void;
   seek: (newTime: number) => void;
@@ -59,6 +60,9 @@ export interface UseIntervalTimerReturn {
   volume: number;
 }
 
+/** Backward-compatible alias for UseSegmentTimerReturn */
+export type UseIntervalTimerReturn = UseSegmentTimerReturn;
+
 function getAnnouncementNumber(totalSeconds: number): number | null {
   const safe = Math.round(totalSeconds);
   if (safe >= 3600 && safe % 3600 === 0) {
@@ -75,7 +79,7 @@ function getAnnouncementNumber(totalSeconds: number): number | null {
   return null;
 }
 
-export function useIntervalTimer(): UseIntervalTimerReturn {
+export function useSegmentTimer(): UseSegmentTimerReturn {
   const [segments, setSegments] = useLocalStorage<TimerSegment[]>(
     'voice_timer_segments',
     DEFAULT_SEGMENTS,
@@ -553,6 +557,46 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     [setSegments],
   );
 
+  const moveSegment = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      setSegments((prev) => {
+        if (
+          fromIndex < 0 ||
+          fromIndex >= prev.length ||
+          toIndex < 0 ||
+          toIndex >= prev.length ||
+          fromIndex === toIndex
+        ) {
+          return prev;
+        }
+        const next = [...prev];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+
+        if (statusRef.current === 'idle') {
+          setCurrentSegmentIndex(0);
+          currentSegmentIndexRef.current = 0;
+        } else {
+          setCurrentSegmentIndex((curr) => {
+            let nextIndex = curr;
+            if (curr === fromIndex) {
+              nextIndex = toIndex;
+            } else if (fromIndex < curr && toIndex >= curr) {
+              nextIndex = curr - 1;
+            } else if (fromIndex > curr && toIndex <= curr) {
+              nextIndex = curr + 1;
+            }
+            currentSegmentIndexRef.current = nextIndex;
+            return nextIndex;
+          });
+        }
+
+        return next;
+      });
+    },
+    [setSegments],
+  );
+
   return {
     addSegment,
     adjustTime,
@@ -567,6 +611,7 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     goToSegment,
     isDragging,
     language,
+    moveSegment,
     removeSegment,
     reset,
     seek,
@@ -585,3 +630,6 @@ export function useIntervalTimer(): UseIntervalTimerReturn {
     volume,
   };
 }
+
+/** Backward-compatible alias for useSegmentTimer */
+export const useIntervalTimer = useSegmentTimer;

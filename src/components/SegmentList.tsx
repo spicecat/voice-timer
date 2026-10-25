@@ -1,5 +1,12 @@
-import {Copy, Plus, Trash2} from 'lucide-react';
-import {memo} from 'react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  GripVertical,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import {memo, useState} from 'react';
 import {sharedStyles} from '../constants';
 import {useTranslation} from '../hooks/use-translation';
 import type {TimerSegment, TimerStatus} from '../types';
@@ -10,6 +17,7 @@ export interface SegmentListProps {
   isDark: boolean;
   onAddSegment: () => void;
   onCopySegment: (id: string) => void;
+  onMoveSegment: (fromIndex: number, toIndex: number) => void;
   onRemoveSegment: (id: string) => void;
   onUpdateSegment: (
     id: string,
@@ -30,12 +38,16 @@ export const SegmentList = memo(function SegmentList({
   onUpdateSegment,
   onRemoveSegment,
   onCopySegment,
+  onMoveSegment,
 }: SegmentListProps) {
   const {t} = useTranslation();
   const activeSegments = segments;
   const activeIndex = currentSegmentIndex;
   const updateHandler = onUpdateSegment;
   const disabled = status === 'running';
+
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   return (
     <div className="space-y-3">
@@ -56,25 +68,109 @@ export const SegmentList = memo(function SegmentList({
           <Plus className="w-3 h-3" /> {t('segments.add')}
         </button>
       </div>
-      <div className="space-y-2">
+      <ul className="space-y-2">
         {activeSegments.map((segment, index) => (
-          <div
-            className={`flex items-center gap-2 rounded border p-2 ${
+          <li
+            className={`flex items-center gap-1.5 rounded border p-2 transition-colors ${
               index === activeIndex
                 ? isDark
                   ? 'border-zinc-600 bg-zinc-900'
                   : 'border-zinc-400 bg-zinc-100'
                 : isDark
-                  ? 'border-zinc-800'
-                  : 'border-zinc-200'
-            }`}
+                  ? 'border-zinc-800 bg-zinc-950/40'
+                  : 'border-zinc-200 bg-white'
+            } ${
+              dragOverIndex === index && draggedIndex !== index
+                ? isDark
+                  ? 'ring-2 ring-zinc-400 border-zinc-400'
+                  : 'ring-2 ring-zinc-600 border-zinc-600'
+                : ''
+            } ${draggedIndex === index ? 'opacity-40' : ''}`}
+            draggable={!disabled}
             key={segment.id}
+            onDragEnd={() => {
+              setDraggedIndex(null);
+              setDragOverIndex(null);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (!disabled && dragOverIndex !== index) {
+                setDragOverIndex(index);
+              }
+            }}
+            onDragStart={(e) => {
+              if (disabled) return;
+              setDraggedIndex(index);
+              e.dataTransfer.effectAllowed = 'move';
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (
+                !disabled &&
+                draggedIndex !== null &&
+                draggedIndex !== index
+              ) {
+                onMoveSegment(draggedIndex, index);
+              }
+              setDraggedIndex(null);
+              setDragOverIndex(null);
+            }}
           >
+            {/* Move handle & Up/Down reorder controls */}
+            <div className="flex items-center gap-0.5 text-zinc-400">
+              <button
+                aria-label={t('segments.dragHandle')}
+                className={`p-0.5 rounded cursor-grab active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed ${
+                  isDark
+                    ? 'hover:text-zinc-200 hover:bg-zinc-800'
+                    : 'hover:text-zinc-800 hover:bg-zinc-100'
+                }`}
+                disabled={disabled || activeSegments.length <= 1}
+                title={t('segments.dragHandle')}
+                type="button"
+              >
+                <GripVertical className="w-3.5 h-3.5" />
+              </button>
+              <div className="flex flex-col -space-y-1">
+                <button
+                  aria-label={t('segments.moveUp')}
+                  className={`p-0.5 rounded cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed ${
+                    isDark
+                      ? 'hover:text-zinc-200 hover:bg-zinc-800'
+                      : 'hover:text-zinc-800 hover:bg-zinc-100'
+                  }`}
+                  disabled={disabled || index === 0}
+                  onClick={() => onMoveSegment(index, index - 1)}
+                  title={t('segments.moveUp')}
+                  type="button"
+                >
+                  <ChevronUp className="w-3 h-3" />
+                </button>
+                <button
+                  aria-label={t('segments.moveDown')}
+                  className={`p-0.5 rounded cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed ${
+                    isDark
+                      ? 'hover:text-zinc-200 hover:bg-zinc-800'
+                      : 'hover:text-zinc-800 hover:bg-zinc-100'
+                  }`}
+                  disabled={disabled || index === activeSegments.length - 1}
+                  onClick={() => onMoveSegment(index, index + 1)}
+                  title={t('segments.moveDown')}
+                  type="button"
+                >
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+
             <span
-              className={`text-[11px] w-4 ${sharedStyles.textSubtle(isDark)}`}
+              className={`text-[11px] w-4 font-mono font-medium ${sharedStyles.textSubtle(
+                isDark,
+              )}`}
             >
               {index + 1}
             </span>
+
             <div className="flex items-center gap-1 font-mono-numbers">
               <input
                 aria-label={t('segments.hoursAriaLabel')}
@@ -171,9 +267,9 @@ export const SegmentList = memo(function SegmentList({
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 });

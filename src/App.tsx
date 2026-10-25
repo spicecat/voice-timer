@@ -15,9 +15,10 @@ import {
 } from './components';
 import {sharedStyles} from './constants';
 import {I18nProvider} from './contexts/i18n-context';
-import {useIntervalTimer} from './hooks/use-interval-timer';
 import {useKeyboardShortcuts} from './hooks/use-keyboard-shortcuts';
+import {useSegmentTimer} from './hooks/use-segment-timer';
 import {useTheme} from './hooks/use-theme';
+import {useWakeLock} from './hooks/use-wake-lock';
 import {translate} from './locales';
 import {formatTime} from './utils/format-time';
 import {getTimerDurationSeconds} from './utils/time-calculations';
@@ -52,11 +53,19 @@ export default function App() {
     addSegment,
     removeSegment,
     copySegment,
+    moveSegment,
     testSound,
     startSeek,
     seek,
     endSeek,
-  } = useIntervalTimer();
+  } = useSegmentTimer();
+
+  const {
+    isActive: wakeLockActive,
+    isSupported: wakeLockSupported,
+    wakeLockEnabled,
+    setWakeLockEnabled,
+  } = useWakeLock(status === 'running');
 
   const handleToggleHelp = useCallback(
     () => setIsHelpOpen((prev) => !prev),
@@ -149,6 +158,7 @@ export default function App() {
           onToggleTheme={toggleTheme}
           totalDuration={totalDuration}
           totalSegments={segments.length}
+          wakeLockActive={wakeLockActive}
         />
 
         <main className="w-full max-w-sm flex flex-col items-center my-auto py-4">
@@ -178,6 +188,7 @@ export default function App() {
               isDark={isDark}
               onAddSegment={addSegment}
               onCopySegment={copySegment}
+              onMoveSegment={moveSegment}
               onRemoveSegment={removeSegment}
               onUpdateSegment={updateSegment}
               segments={segments}
@@ -191,8 +202,12 @@ export default function App() {
               onSoundModeChange={setSoundMode}
               onTestSound={testSound}
               onVolumeChange={setVolume}
+              onWakeLockChange={setWakeLockEnabled}
               soundMode={soundMode}
               volume={volume}
+              wakeLockActive={wakeLockActive}
+              wakeLockEnabled={wakeLockEnabled}
+              wakeLockSupported={wakeLockSupported}
             />
           </div>
         </main>

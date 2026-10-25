@@ -1,3 +1,4 @@
+import {Sun} from 'lucide-react';
 import {memo} from 'react';
 import {SUPPORTED_LANGUAGES, sharedStyles} from '../constants';
 import {useTranslation} from '../hooks/use-translation';
@@ -10,8 +11,12 @@ export interface SettingsPanelProps {
   onSoundModeChange: (mode: SoundMode) => void;
   onTestSound: () => void;
   onVolumeChange: (volume: number) => void;
+  onWakeLockChange?: (enabled: boolean) => void;
   soundMode: SoundMode;
   volume: number;
+  wakeLockActive?: boolean;
+  wakeLockEnabled?: boolean;
+  wakeLockSupported?: boolean;
 }
 
 const SOUND_MODES: {
@@ -32,6 +37,10 @@ export const SettingsPanel = memo(function SettingsPanel({
   onVolumeChange,
   onLanguageChange,
   onTestSound,
+  wakeLockActive = false,
+  wakeLockEnabled = true,
+  wakeLockSupported = true,
+  onWakeLockChange,
 }: SettingsPanelProps) {
   const {t} = useTranslation();
 
@@ -111,6 +120,54 @@ export const SettingsPanel = memo(function SettingsPanel({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Screen Wake Lock Option */}
+      <div
+        className={`flex items-center justify-between text-xs border-t pt-4 ${sharedStyles.sectionDivider(isDark)}`}
+      >
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1.5">
+            <Sun className="w-3.5 h-3.5 text-amber-500" />
+            <span className={sharedStyles.textMuted(isDark)}>
+              {t('settings.keepAwake')}
+            </span>
+          </div>
+          <span
+            className={`text-[10px] mt-0.5 ${sharedStyles.textSubtle(isDark)}`}
+          >
+            {!wakeLockSupported
+              ? t('settings.keepAwakeNotSupported')
+              : wakeLockActive
+                ? t('settings.keepAwakeActive')
+                : t('settings.keepAwakeActiveWhenRunning')}
+          </span>
+        </div>
+
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            checked={wakeLockEnabled}
+            className="sr-only peer"
+            disabled={!wakeLockSupported}
+            onChange={(e) => onWakeLockChange?.(e.target.checked)}
+            type="checkbox"
+          />
+          <div
+            className={`w-8 h-4 rounded-full transition-colors peer-focus:outline-none ${
+              isDark
+                ? 'bg-zinc-800 peer-checked:bg-zinc-200'
+                : 'bg-zinc-300 peer-checked:bg-zinc-800'
+            } peer-disabled:opacity-40 peer-disabled:cursor-not-allowed`}
+          >
+            <div
+              className={`w-3 h-3 rounded-full transition-transform transform translate-x-0.5 translate-y-0.5 ${
+                isDark
+                  ? 'bg-zinc-400 peer-checked:bg-zinc-950 peer-checked:translate-x-4'
+                  : 'bg-white peer-checked:translate-x-4'
+              }`}
+            />
+          </div>
+        </label>
       </div>
 
       {/* Global Language Option - extensible across SUPPORTED_LANGUAGES */}
